@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -10,8 +11,15 @@ import {
 } from "@/modules/assignments/schema";
 import { FileUploadField } from "@/components/create-assignment/file-upload-field";
 import { QuestionTypeRow } from "@/components/create-assignment/question-type-row";
+import { ROUTES } from "@/lib/routes";
+import { buildGenerationRequestPayload } from "@/modules/assignments/build-generation-request";
+import { useAssignmentDraftStore } from "@/store/assignment-draft-store";
+import { useGenerationSubmitStore } from "@/store/generation-submit-store";
 
 export function CreateAssignmentForm() {
+  const router = useRouter();
+  const [draftSaved, setDraftSaved] = useState(false);
+
   const form = useForm<CreateAssignmentFormValues>({
     resolver: zodResolver(createAssignmentSchema),
     defaultValues: {
@@ -45,7 +53,18 @@ export function CreateAssignmentForm() {
     return { totalQuestions, totalMarks };
   }, [questionRows]);
 
+  
+  const { setAssignmentDraft } = useAssignmentDraftStore();
+  const { setGenerationSubmitDraft } = useGenerationSubmitStore();
+
   const onSubmit = (values: CreateAssignmentFormValues) => {
+    setAssignmentDraft(values);
+    const assignmentId = `a-${Date.now()}`;
+    const request = buildGenerationRequestPayload(assignmentId, values);
+    setGenerationSubmitDraft({ request, clientStatus: "queued" });
+    setDraftSaved(true);
+    router.push(ROUTES.AI_TOOLKIT);
+
     console.log("Create assignment payload:", values);
   };
 
@@ -109,6 +128,8 @@ export function CreateAssignmentForm() {
           {...register("additionalInstructions")}
         />
       </div>
+
+      {draftSaved ? <p className="text-xs text-emerald-600">Draft saved to local store</p> : null}
 
       <div className="flex items-center justify-between">
         <button type="button" className="rounded-full border border-gray-200 px-4 py-2 text-sm">

@@ -2,7 +2,6 @@
 
 # dependencies
 /node_modules
-**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -16,12 +15,10 @@
 
 # next.js
 /.next/
-**/.next/
 /out/
 
 # production
 /build
-**/dist/
 
 # misc
 .DS_Store
@@ -45,15 +42,3 @@ next-env.d.ts
 
 # local design/reference assets
 veda icon.webp
-
-# docs/assets excluded from push
-*.md
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.webp
-*.svg
-
-# local backup folders
-.backup/

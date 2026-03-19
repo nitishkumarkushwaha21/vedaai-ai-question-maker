@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { connectSocket, disconnectSocket } from "@/lib/socket";
 import { toGenerationStatus } from "@/modules/assignments/generation-events";
-import type { GenerationJob, GenerationSocketEvent, GenerationSocketPayload } from "@/types/generation-job";
+import type { GenerationJob, GenerationSocketEvent, GenerationSocketPayload } from "@/types/generation-status";
 
-type UseGenerationJobSocketArgs = {
+type UseGenerationStatusSocketArgs = {
 	assignmentId: string;
 	initialJob: GenerationJob;
 };
@@ -17,7 +17,7 @@ const GENERATION_EVENTS: GenerationSocketEvent[] = [
 	"generation:failed",
 ];
 
-export function useGenerationJobSocket({ assignmentId, initialJob }: UseGenerationJobSocketArgs) {
+export function useGenerationStatusSocket({ assignmentId, initialJob }: UseGenerationStatusSocketArgs) {
 	const [job, setJob] = useState<GenerationJob>(initialJob);
 	const [socketConnected, setSocketConnected] = useState(false);
 
