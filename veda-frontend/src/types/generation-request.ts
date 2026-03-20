@@ -8,6 +8,7 @@ export type QuestionTypeRequest = {
 };
 
 export type GenerationRequestPayload = {
+	userId: string;
 	assignmentId: string;
 	dueDate: string;
 	questionTypes: QuestionTypeRequest[];
@@ -15,6 +16,16 @@ export type GenerationRequestPayload = {
 	totalMarks: number;
 	additionalInstructions?: string;
 	sourceFileAttached: boolean;
+	profile?: {
+		userName?: string;
+		schoolName?: string;
+		schoolLocation?: string;
+		schoolIconUrl?: string;
+		teacherSubject?: string;
+		className?: string;
+		subject?: string;
+		timeAllowedMinutes?: number;
+	};
 	expectedOutput: {
 		sections: string[];
 		includeDifficulty: boolean;

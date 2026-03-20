@@ -12,10 +12,10 @@ type QuestionSectionBlockProps = {
 export function QuestionSectionBlock({ section }: QuestionSectionBlockProps) {
   return (
     <section className="space-y-3">
-      <h3 className="text-center text-lg font-semibold text-slate-900">{section.title}</h3>
-      {section.instruction ? <p className="text-xs italic text-slate-600 md:text-sm">{section.instruction}</p> : null}
+      <h3 className="text-center text-base font-semibold text-slate-900 md:text-[22px]">{section.title}</h3>
+      {section.instruction ? <p className="text-[11px] italic text-slate-600 md:text-sm">{section.instruction}</p> : null}
 
-      <ol className="space-y-2 pl-4 text-xs text-slate-800 md:text-sm">
+      <ol className="space-y-2 pl-4 text-[11px] leading-relaxed text-slate-800 md:text-sm">
         {section.questions.map((question, index) => (
           <li key={question.id} className="leading-relaxed">
             <span className="font-medium">{index + 1}. </span>

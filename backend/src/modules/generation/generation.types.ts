@@ -33,6 +33,7 @@ export type GeneratedQuestionPaper = {
 };
 
 export type GenerationRequestPayload = {
+  userId: string;
   assignmentId: string;
   dueDate: string;
   questionTypes: Array<{
@@ -45,6 +46,18 @@ export type GenerationRequestPayload = {
   totalMarks: number;
   additionalInstructions?: string;
   sourceFileAttached: boolean;
+  sourceMaterialText?: string;
+  sourceFileName?: string;
+  profile?: {
+    userName?: string;
+    schoolName?: string;
+    schoolLocation?: string;
+    schoolIconUrl?: string;
+    teacherSubject?: string;
+    className?: string;
+    subject?: string;
+    timeAllowedMinutes?: number;
+  };
   expectedOutput: {
     sections: string[];
     includeDifficulty: boolean;
@@ -54,6 +67,7 @@ export type GenerationRequestPayload = {
 
 export type GenerationJob = {
   jobId: string;
+  userId: string;
   assignmentId: string;
   status: GenerationStatus;
   progress: number;

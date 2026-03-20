@@ -8,6 +8,7 @@ import { ENV } from "../config/env";
 
 export function createRedisConnection() {
   const parsed = new URL(ENV.REDIS_URL);
+  const isTls = parsed.protocol === "rediss:";
 
   return {
     host: parsed.hostname,
@@ -15,14 +16,12 @@ export function createRedisConnection() {
     username: parsed.username || undefined,
     password: parsed.password || undefined,
     maxRetriesPerRequest: null,
+    tls: isTls ? {} : undefined,
   };
 }
 
 export async function checkRedisHealth() {
-  const client = new IORedis(ENV.REDIS_URL, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: false,
-  });
+  const client = new IORedis(createRedisConnection());
 
   const startedAt = Date.now();
 

@@ -2,6 +2,8 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useRequireAuth } from "@/auth/hooks/use-require-auth";
+import { useAuthStore } from "@/auth/auth.store";
 import { DesktopSidebarNav } from "@/components/shell/desktop-sidebar";
 import { MobileBottomNavbar } from "@/components/shell/mobile-bottom";
 import { TopHeaderNavbar } from "@/components/shell/top-header-navbar";
@@ -11,7 +13,9 @@ type DashboardLayoutProps = {
 };
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  useRequireAuth();
   const pathname = usePathname();
+  const userName = useAuthStore((state) => state.profile.userName);
 
   const headerTitle =
     pathname === "/assignments/new"
@@ -29,8 +33,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <DesktopSidebarNav />
         </aside>
 
-        <main className="min-w-0 flex-1 rounded-2xl bg-white/60 p-3 md:p-5">
-          <TopHeaderNavbar title={headerTitle} userName="John Doe" />
+        <main className="min-w-0 flex-1 rounded-2xl border border-[#eceff3] bg-white p-3 md:p-5">
+          <TopHeaderNavbar title={headerTitle} userName={userName} />
           {children}
         </main>
       </div>

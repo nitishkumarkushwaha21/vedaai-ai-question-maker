@@ -7,6 +7,8 @@ import express from "express";
 import cors from "cors";
 import type { Server } from "socket.io";
 import { ENV } from "./config/env";
+import { authMiddleware } from "./auth/auth.middleware";
+import { createAuthRouter } from "./auth/auth.route";
 import { getMongoHealthSnapshot } from "./db/mongo";
 import { checkRedisHealth } from "./db/redis";
 import { getWorkerHealthSnapshot } from "./queue/worker";
@@ -54,7 +56,8 @@ export function createApp(io: Server) {
     );
   });
 
-  app.use("/api/generation", createGenerationRouter(io));
+  app.use("/api/auth", authMiddleware, createAuthRouter());
+  app.use("/api/generation", authMiddleware, createGenerationRouter(io));
   app.use(notFoundHandler);
   app.use(errorHandler);
 

@@ -4,6 +4,7 @@ import type { GenerationRequestPayload } from "@/types/generation-request";
 export function buildGenerationRequestPayload(
 	assignmentId: string,
 	values: CreateAssignmentFormValues,
+	userId: string,
 ): GenerationRequestPayload {
 	const questionTypes = values.questionRows.map((row) => ({
 		type: row.type,
@@ -16,6 +17,7 @@ export function buildGenerationRequestPayload(
 	const totalMarks = questionTypes.reduce((sum, item) => sum + item.totalMarks, 0);
 
 	return {
+		userId,
 		assignmentId,
 		dueDate: values.dueDate,
 		questionTypes,

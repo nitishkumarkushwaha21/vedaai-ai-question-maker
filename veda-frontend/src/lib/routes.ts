@@ -1,6 +1,9 @@
 
 export const ROUTES = {
     HOME: "/",
+    LOGIN: "/auth/login",
+    SIGNUP: "/auth/signup",
+    AUTH_PROFILE: "/auth/profile",
     ASSIGNMENTS: "/assignments",
     CREATE_ASSIGNMENT: "/assignments/new",
     AI_TOOLKIT: "/ai-toolkit",  

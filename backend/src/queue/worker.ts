@@ -154,6 +154,7 @@ export function startGenerationWorker(io: Server) {
     } else {
       emitJob(io, "generation:failed", {
         jobId,
+        userId: request.userId,
         assignmentId: request.assignmentId,
         status: "failed",
         progress: 0,

@@ -5,11 +5,14 @@
  */
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { AIToolkitLiveView } from "@/components/output/ai-toolkit-live-view";
+import { useGenerationStatusSocket } from "@/hooks/use-generation-status-socket";
 import { ENV } from "@/lib/env";
-import { useGenerationStore } from "@/store/generation-store";
+import { useAssignmentDraftStore } from "@/store/assignment-draft-store";
 import { useGenerationSubmitStore } from "@/store/generation-submit-store";
+import { useAuthStore } from "@/auth/auth.store";
 import type { GenerationJob } from "@/types/generation-status";
 import type { QuestionPaper } from "@/types/question-paper";
 
@@ -35,7 +38,7 @@ type StartGenerationResponseData = {
 type GenerationResultResponseData = {
 	paper?: QuestionPaper;
 	job?: GenerationJob;
-	status?: "pending";
+	status?: "pending" | "failed";
 };
 
 type RegenerateGenerationResponseData = {
@@ -52,72 +55,59 @@ const MOCK_JOB: GenerationJob = {
 	startedAt: "2026-03-18T10:00:00.000Z",
 };
 
-const MOCK_PAPER: QuestionPaper = {
-	assignmentId: "a1",
-	schoolName: "Delhi Public School, Sector-4, Bokaro",
-	subject: "English",
-	className: "5th",
-	timeAllowedMinutes: 45,
-	maxMarks: 20,
-	studentFields: {
-		name: true,
-		rollNumber: true,
-		section: true,
-	},
-	sections: [
-		{
-			id: "sec-a",
-			title: "Section A",
-			instruction: "Attempt all questions. Each question carries 2 marks.",
-			questions: [
-				{
-					id: "q1",
-					text: "Define electroplating. Explain its purpose.",
-					marks: 2,
-					difficulty: "easy",
-				},
-				{
-					id: "q2",
-					text: "What is the role of a conductor in electrolysis?",
-					marks: 2,
-					difficulty: "medium",
-				},
-			],
-		},
-	],
-	answerKey: ["Sample key line 1", "Sample key line 2"],
-};
-
 export default function AIToolkitPage() {
 	const [isStarting, setIsStarting] = useState(false);
 	const [isRegenerating, setIsRegenerating] = useState(false);
 	const [startError, setStartError] = useState<string | null>(null);
 	const [resultInfo, setResultInfo] = useState<string | null>(null);
 	const [activeJob, setActiveJob] = useState<GenerationJob | null>(null);
-	const [activePaper, setActivePaper] = useState<QuestionPaper>(MOCK_PAPER);
+	const [activePaper, setActivePaper] = useState<QuestionPaper | null>(null);
 	const latestFetchedResultJobIdRef = useRef<string | null>(null);
+	const autoStartHandledRef = useRef(false);
 
-	const generationJobFromStore = useGenerationStore((state) => state.generationJob);
 	const generationSubmitDraft = useGenerationSubmitStore((state) => state.generationSubmitDraft);
 	const updateGenerationSubmitStatus = useGenerationSubmitStore((state) => state.updateGenerationSubmitStatus);
 	const resetGenerationSubmitDraft = useGenerationSubmitStore((state) => state.resetGenerationSubmitDraft);
+	const assignmentDraft = useAssignmentDraftStore((state) => state.assignmentDraft);
+  const session = useAuthStore((state) => state.session);
+  const profile = useAuthStore((state) => state.profile);
+	const { getToken, userId: clerkUserId } = useAuth();
+
+	const resolvedUserId = clerkUserId ?? session.userId ?? "demo-user-001";
 
 	const draftRequest = generationSubmitDraft?.request;
 	const assignmentId = draftRequest?.assignmentId ?? MOCK_JOB.assignmentId;
 
-	const initialJob: GenerationJob = activeJob
-		? activeJob
-		: draftRequest
-		? {
+	const initialJob: GenerationJob = useMemo(() => {
+		if (activeJob) {
+			return activeJob;
+		}
+
+		if (draftRequest) {
+			return {
 				...MOCK_JOB,
 				assignmentId,
 				status: generationSubmitDraft?.clientStatus ?? "queued",
 				message: "Draft loaded. Ready to start generation.",
-			}
-		: MOCK_JOB;
+			};
+		}
+
+		return MOCK_JOB;
+	}, [activeJob, assignmentId, draftRequest, generationSubmitDraft?.clientStatus]);
+
+	const { job: socketJob, socketConnected } = useGenerationStatusSocket({
+		assignmentId,
+		initialJob,
+	});
 
 	const fetchGenerationResult = useCallback(async (jobId: string) => {
-		const resultResponse = await fetch(`${ENV.API_URL}/generation/${jobId}/result`);
+		const token = await getToken();
+		const resultResponse = await fetch(`${ENV.API_URL}/generation/${jobId}/result`, {
+			headers: {
+				...(token ? { Authorization: `Bearer ${token}` } : {}),
+				"x-user-id": resolvedUserId,
+			},
+		});
 		const resultPayload = (await resultResponse.json()) as
 			| ApiSuccessEnvelope<GenerationResultResponseData>
 			| ApiErrorEnvelope;
@@ -141,6 +131,15 @@ export default function AIToolkitPage() {
 
 		const resultData = resultPayload.data;
 
+		if (resultData.status === "failed") {
+			if (resultData.job) {
+				setActiveJob(resultData.job);
+				updateGenerationSubmitStatus("failed");
+			}
+
+			throw new Error(resultPayload.meta?.message ?? resultData.job?.error ?? "Generation failed");
+		}
+
 		if (resultData.paper) {
 			setActivePaper(resultData.paper);
 		}
@@ -152,27 +151,27 @@ export default function AIToolkitPage() {
 
 		setResultInfo("Latest generated paper loaded from backend.");
 		latestFetchedResultJobIdRef.current = jobId;
-	}, [updateGenerationSubmitStatus]);
+	}, [getToken, resolvedUserId, updateGenerationSubmitStatus]);
 
 	useEffect(() => {
-		if (!generationJobFromStore) {
+		if (!socketJob) {
 			return;
 		}
 
-		setActiveJob(generationJobFromStore);
-		updateGenerationSubmitStatus(generationJobFromStore.status);
+		setActiveJob(socketJob);
+		updateGenerationSubmitStatus(socketJob.status);
 
 		if (
-			generationJobFromStore.status === "completed" &&
-			latestFetchedResultJobIdRef.current !== generationJobFromStore.jobId
+			socketJob.status === "completed" &&
+			latestFetchedResultJobIdRef.current !== socketJob.jobId
 		) {
-			void fetchGenerationResult(generationJobFromStore.jobId).catch((error: unknown) => {
+			void fetchGenerationResult(socketJob.jobId).catch((error: unknown) => {
 				setStartError(error instanceof Error ? error.message : "Failed to fetch generation result");
 			});
 		}
-	}, [fetchGenerationResult, generationJobFromStore, updateGenerationSubmitStatus]);
+	}, [fetchGenerationResult, socketJob, updateGenerationSubmitStatus]);
 
-	const startGenerationFromBackend = async () => {
+	const startGenerationFromBackend = useCallback(async () => {
 		if (!draftRequest) {
 			return;
 		}
@@ -182,10 +181,41 @@ export default function AIToolkitPage() {
 		setResultInfo(null);
 
 		try {
+			const token = await getToken();
+			const sourceFile = assignmentDraft?.file;
+			const requestPayload = {
+				...draftRequest,
+				userId: resolvedUserId || draftRequest.userId,
+				profile,
+				sourceFileAttached: Boolean(sourceFile),
+			};
+
+			const requestInit: RequestInit = sourceFile
+				? (() => {
+						const formData = new FormData();
+						formData.append("request", JSON.stringify(requestPayload));
+						formData.append("file", sourceFile);
+						return {
+							method: "POST",
+							headers: {
+								...(token ? { Authorization: `Bearer ${token}` } : {}),
+								"x-user-id": resolvedUserId,
+							},
+							body: formData,
+						};
+				  })()
+				: {
+						method: "POST",
+						headers: {
+							...(token ? { Authorization: `Bearer ${token}` } : {}),
+							"Content-Type": "application/json",
+							"x-user-id": resolvedUserId,
+						},
+						body: JSON.stringify(requestPayload),
+				  };
+
 			const response = await fetch(`${ENV.API_URL}/generation/start`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(draftRequest),
+				...requestInit,
 			});
 			const payload = (await response.json()) as ApiSuccessEnvelope<StartGenerationResponseData> | ApiErrorEnvelope;
 
@@ -211,7 +241,18 @@ export default function AIToolkitPage() {
 		} finally {
 			setIsStarting(false);
 		}
-	};
+	}, [assignmentDraft?.file, draftRequest, getToken, profile, resolvedUserId, updateGenerationSubmitStatus]);
+
+	useEffect(() => {
+		const shouldAutoStart = new URLSearchParams(window.location.search).get("autostart") === "1";
+
+		if (!shouldAutoStart || autoStartHandledRef.current || !draftRequest || Boolean(activeJob)) {
+			return;
+		}
+
+		autoStartHandledRef.current = true;
+		void startGenerationFromBackend();
+	}, [activeJob, draftRequest, startGenerationFromBackend]);
 
 	const regenerateFromBackend = async () => {
 		if (!activeJob) {
@@ -223,9 +264,14 @@ export default function AIToolkitPage() {
 		setResultInfo("Regeneration started. Waiting for socket completion...");
 
 		try {
+			const token = await getToken();
 			const response = await fetch(`${ENV.API_URL}/generation/${activeJob.jobId}/regenerate`, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					...(token ? { Authorization: `Bearer ${token}` } : {}),
+					"Content-Type": "application/json",
+					"x-user-id": resolvedUserId,
+				},
 			});
 			const payload = (await response.json()) as
 				| ApiSuccessEnvelope<RegenerateGenerationResponseData>
@@ -334,7 +380,13 @@ export default function AIToolkitPage() {
 				) : null}
 			</section>
 
-			<AIToolkitLiveView assignmentId={assignmentId} initialJob={initialJob} paper={activePaper} />
+			{activePaper ? (
+				<AIToolkitLiveView job={socketJob ?? initialJob} socketConnected={socketConnected} paper={activePaper} />
+			) : (
+				<section className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+					No generated paper yet. Start generation and wait for completion.
+				</section>
+			)}
 		</div>
 	);
 }

@@ -17,7 +17,9 @@ const rawQuestionSchema = z.object({
 const rawSectionSchema = z.object({
   title: z.string().min(1),
   instruction: z.string().optional(),
-  questions: z.array(rawQuestionSchema).min(1),
+  // Some adapters may emit empty sections when total questions < section count.
+  // We allow that here and rebalance/fill questions in normalization below.
+  questions: z.array(rawQuestionSchema),
 });
 
 const rawPaperSchema = z.object({
@@ -102,10 +104,10 @@ export function normalizeGeneratedPaper(
 
   return {
     assignmentId: request.assignmentId,
-    schoolName: parsed.data.schoolName ?? "Delhi Public School, Sector-4, Bokaro",
-    subject: parsed.data.subject ?? "English",
-    className: parsed.data.className ?? "5th",
-    timeAllowedMinutes: parsed.data.timeAllowedMinutes ?? 45,
+    schoolName: request.profile?.schoolName || parsed.data.schoolName || "Delhi Public School, Sector-4, Bokaro",
+    subject: request.profile?.subject || request.profile?.teacherSubject || parsed.data.subject || "English",
+    className: request.profile?.className || parsed.data.className || "5th",
+    timeAllowedMinutes: request.profile?.timeAllowedMinutes ?? parsed.data.timeAllowedMinutes ?? 45,
     maxMarks: request.totalMarks,
     studentFields: {
       name: true,

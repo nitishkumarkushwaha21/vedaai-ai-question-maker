@@ -27,6 +27,7 @@ export function startGeneration(io: Server, request: GenerationRequestPayload) {
 
   const queuedJob: GenerationJob = {
     jobId,
+    userId: request.userId,
     assignmentId: request.assignmentId,
     status: "queued",
     progress: 10,
@@ -43,6 +44,7 @@ export function startGeneration(io: Server, request: GenerationRequestPayload) {
     { jobId },
     {
       jobId,
+      userId: request.userId,
       assignmentId: request.assignmentId,
       status: queuedJob.status,
       progress: queuedJob.progress,

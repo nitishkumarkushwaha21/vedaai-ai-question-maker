@@ -4,7 +4,7 @@ import { CreateAssignmentForm } from "@/components/create-assignment/create-assi
 import { useAssignmentDraftStore } from "@/store/assignment-draft-store";
 
 export default function CreateAssignmentPage() {
-  const assignmentDraft = useAssignmentDraftStore((state) => state.assignmentDraft);
+  const hasDraft = Boolean(useAssignmentDraftStore((state) => state.assignmentDraft));
 
   return (
     <section className="space-y-4 pb-20 md:pb-4">
@@ -13,11 +13,9 @@ export default function CreateAssignmentPage() {
         <p className="text-sm text-gray-500">Set up a new assignment for your students.</p>
       </header>
 
-      <div className="h-1 w-full rounded-full bg-gray-200">
-        <div className="h-1 w-1/2 rounded-full bg-gray-700" />
-      </div>
-
-      <p className="text-xs text-gray-500">Draft saved: {assignmentDraft ? "Yes" : "No"}</p>
+      <p className="text-xs font-medium text-gray-500">
+        {hasDraft ? "Draft in progress" : "Start filling details"}
+      </p>
 
       <CreateAssignmentForm />
     </section>

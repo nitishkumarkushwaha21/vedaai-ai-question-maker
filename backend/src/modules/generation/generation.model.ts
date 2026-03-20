@@ -43,6 +43,7 @@ const generatedPaperSchema = new Schema(
 const generationRecordSchema = new Schema(
   {
     jobId: { type: String, required: true, unique: true, index: true },
+    userId: { type: String, required: true, index: true },
     assignmentId: { type: String, required: true, index: true },
     status: {
       type: String,
