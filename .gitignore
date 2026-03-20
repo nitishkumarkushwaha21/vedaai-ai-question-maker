@@ -48,6 +48,7 @@ veda icon.webp
 
 # docs/assets excluded from push
 *.md
+!README.md
 *.png
 *.jpg
 *.jpeg
