@@ -8,7 +8,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 function parseCorsOrigins(value: string | undefined) {
-  const defaults = ["http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.56.1:3000"];
+  const defaults = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://192.168.56.1:3000",
+    "https://vedaai-ai-question-maker.vercel.app",
+  ];
   const configured = (value ?? "")
     .split(",")
     .map((origin) => origin.trim())
