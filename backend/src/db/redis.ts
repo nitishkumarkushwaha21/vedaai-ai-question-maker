@@ -8,15 +8,19 @@ import { ENV } from "../config/env";
 
 export function createRedisConnection() {
   const parsed = new URL(ENV.REDIS_URL);
-  const isTls = parsed.protocol === "rediss:";
+  const host = parsed.hostname;
+  const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const shouldUseTls = parsed.protocol === "rediss:" || !isLocalHost;
+  const dbFromPath = parsed.pathname && parsed.pathname !== "/" ? Number(parsed.pathname.slice(1)) : undefined;
 
   return {
-    host: parsed.hostname,
+    host,
     port: Number(parsed.port || 6379),
     username: parsed.username || undefined,
     password: parsed.password || undefined,
+    db: Number.isFinite(dbFromPath) ? dbFromPath : undefined,
     maxRetriesPerRequest: null,
-    tls: isTls ? {} : undefined,
+    tls: shouldUseTls ? {} : undefined,
   };
 }
 
