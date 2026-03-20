@@ -12,6 +12,7 @@ import { createAuthRouter } from "./auth/auth.route";
 import { getMongoHealthSnapshot } from "./db/mongo";
 import { checkRedisHealth } from "./db/redis";
 import { getWorkerHealthSnapshot } from "./queue/worker";
+import { createAssignmentRouter } from "./routes/assignment.route";
 import { createGenerationRouter } from "./routes/generation.route";
 import { notFoundHandler, errorHandler } from "./utils/errors";
 import { requestTraceMiddleware } from "./utils/request-trace";
@@ -57,6 +58,7 @@ export function createApp(io: Server) {
   });
 
   app.use("/api/auth", authMiddleware, createAuthRouter());
+  app.use("/api/assignments", authMiddleware, createAssignmentRouter());
   app.use("/api/generation", authMiddleware, createGenerationRouter(io));
   app.use(notFoundHandler);
   app.use(errorHandler);

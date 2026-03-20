@@ -2,13 +2,17 @@
 
 import type { AssignmentCard as AssignmentCardType } from "@/types/assignment";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { MoreVertical } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 type AssignmentCardProps = {
   item: AssignmentCardType;
+  onDeleteAssignment: (assignmentId: string) => Promise<void>;
+  deleting?: boolean;
 };
 
-export function AssignmentCard({ item }: AssignmentCardProps) {
+export function AssignmentCard({ item, onDeleteAssignment, deleting = false }: AssignmentCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,11 +53,14 @@ export function AssignmentCard({ item }: AssignmentCardProps) {
   }, [menuOpen]);
 
   const menuId = `assignment-actions-${item.id}`;
+  const detailHref = `${ROUTES.ASSIGNMENTS}/${item.id}`;
 
   return (
     <article className="rounded-3xl bg-white p-4 shadow-sm">
       <div className="mb-6 flex items-start justify-between gap-2">
-        <h2 className="text-[38px] font-semibold leading-none text-slate-800">{item.title}</h2>
+        <Link href={detailHref} className="text-[38px] font-semibold leading-none text-slate-800 hover:underline">
+          {item.title}
+        </Link>
 
         <div className="relative" ref={menuRef}>
           <button
@@ -75,21 +82,30 @@ export function AssignmentCard({ item }: AssignmentCardProps) {
               aria-label="Assignment actions"
               className="absolute right-0 top-7 z-20 min-w-[132px] rounded-xl border border-slate-100 bg-white p-2 shadow-[0_12px_28px_rgba(15,23,42,0.16)]"
             >
-              <button
-                type="button"
+              <Link
+                href={detailHref}
                 role="menuitem"
                 className="block w-full rounded-lg px-3 py-1.5 text-left text-xs text-slate-600 hover:bg-slate-50"
                 onClick={() => setMenuOpen(false)}
               >
                 View Assignment
-              </button>
+              </Link>
               <button
                 type="button"
                 role="menuitem"
+                disabled={deleting}
                 className="block w-full rounded-lg px-3 py-1.5 text-left text-xs text-rose-500 hover:bg-rose-50"
-                onClick={() => setMenuOpen(false)}
+                onClick={async () => {
+                  const approved = window.confirm("Delete this assignment and its generated paper history?");
+                  if (!approved) {
+                    return;
+                  }
+
+                  await onDeleteAssignment(item.id);
+                  setMenuOpen(false);
+                }}
               >
-                Delete
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           ) : null}

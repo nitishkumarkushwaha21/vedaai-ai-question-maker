@@ -13,6 +13,7 @@ import {
 import { FileUploadField } from "@/components/create-assignment/file-upload-field";
 import { QuestionTypeRow } from "@/components/create-assignment/question-type-row";
 import { ROUTES } from "@/lib/routes";
+import { ENV } from "@/lib/env";
 import { buildGenerationRequestPayload } from "@/modules/assignments/build-generation-request";
 import { useAuthStore } from "@/auth/auth.store";
 import { useAssignmentDraftStore } from "@/store/assignment-draft-store";
@@ -30,6 +31,8 @@ function buildDeterministicAssignmentId(values: CreateAssignmentFormValues) {
 export function CreateAssignmentForm() {
   const router = useRouter();
   const [draftSaved, setDraftSaved] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<CreateAssignmentFormValues>({
     resolver: zodResolver(createAssignmentSchema),
@@ -90,25 +93,71 @@ export function CreateAssignmentForm() {
   const { setAssignmentDraft } = useAssignmentDraftStore();
   const { setGenerationSubmitDraft } = useGenerationSubmitStore();
   const userId = useAuthStore((state) => state.session.userId);
-  const { userId: clerkUserId } = useAuth();
+  const { userId: clerkUserId, getToken } = useAuth();
 
-  const saveDraft = (values: CreateAssignmentFormValues, autoStartGeneration: boolean) => {
+  const saveDraft = async (values: CreateAssignmentFormValues, autoStartGeneration: boolean) => {
+    setSubmitError(null);
+    setSubmitting(true);
+
     setAssignmentDraft(values);
     const assignmentId = buildDeterministicAssignmentId(values);
-    const request = buildGenerationRequestPayload(assignmentId, values, clerkUserId || userId || "demo-user-001");
+    const resolvedUserId = clerkUserId || userId || "demo-user-001";
+    const request = buildGenerationRequestPayload(assignmentId, values, resolvedUserId);
     setGenerationSubmitDraft({ request, clientStatus: "queued" });
-    setDraftSaved(true);
-    router.push(autoStartGeneration ? `${ROUTES.AI_TOOLKIT}?autostart=1` : ROUTES.AI_TOOLKIT);
+
+    const questionTypes = values.questionRows.map((row) => ({
+      type: row.type,
+      numberOfQuestions: row.numberOfQuestions,
+      marksPerQuestion: row.marksPerQuestion,
+      totalMarks: row.numberOfQuestions * row.marksPerQuestion,
+    }));
+
+    const totalQuestions = values.questionRows.reduce((sum, row) => sum + row.numberOfQuestions, 0);
+    const totalMarks = values.questionRows.reduce((sum, row) => sum + row.numberOfQuestions * row.marksPerQuestion, 0);
+
+    try {
+      const token = await getToken();
+      const response = await fetch(`${ENV.API_URL}/assignments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "x-user-id": resolvedUserId,
+        },
+        body: JSON.stringify({
+          assignmentId,
+          title: `Assessment ${values.dueDate}`,
+          dueDate: values.dueDate,
+          questionTypes,
+          totalQuestions,
+          totalMarks,
+          additionalInstructions: values.additionalInstructions,
+          sourceFileAttached: Boolean(values.file),
+        }),
+      });
+
+      const payload = (await response.json()) as { ok: boolean; error?: { message?: string } };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error?.message ?? "Failed to save assignment");
+      }
+
+      setDraftSaved(true);
+      router.push(autoStartGeneration ? `${ROUTES.AI_TOOLKIT}?autostart=1` : ROUTES.AI_TOOLKIT);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Failed to save assignment");
+    } finally {
+      setSubmitting(false);
+    }
 
     console.log("Create assignment payload:", values);
   };
 
-  const onSaveAndContinue = handleSubmit((values) => {
-    saveDraft(values, false);
+  const onSaveAndContinue = handleSubmit(async (values) => {
+    await saveDraft(values, false);
   });
 
-  const onGenerateNow = handleSubmit((values) => {
-    saveDraft(values, true);
+  const onGenerateNow = handleSubmit(async (values) => {
+    await saveDraft(values, true);
   });
 
   return (
@@ -234,6 +283,7 @@ export function CreateAssignmentForm() {
       </div>
 
       {draftSaved ? <p className="text-xs text-emerald-600">Draft saved to local store</p> : null}
+      {submitError ? <p className="text-xs text-rose-600">{submitError}</p> : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button
@@ -250,18 +300,18 @@ export function CreateAssignmentForm() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="submit"
-            disabled={!isValid}
+            disabled={!isValid || submitting}
             className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Save Draft & Continue
+            {submitting ? "Saving..." : "Save Draft & Continue"}
           </button>
           <button
             type="button"
             onClick={onGenerateNow}
-            disabled={!isValid}
+            disabled={!isValid || submitting}
             className="rounded-full bg-gray-900 px-6 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Generate Question Paper
+            {submitting ? "Saving..." : "Generate Question Paper"}
           </button>
         </div>
       </div>

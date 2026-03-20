@@ -3,13 +3,20 @@ import { AssignmentCard } from "@/components/assignments/assignment-card";
 
 type AssignmentsGridProps = {
   items: AssignmentCardType[];
+  onDeleteAssignment: (assignmentId: string) => Promise<void>;
+  deletingAssignmentId?: string | null;
 };
 
-export function AssignmentsGrid({ items }: AssignmentsGridProps) {
+export function AssignmentsGrid({ items, onDeleteAssignment, deletingAssignmentId }: AssignmentsGridProps) {
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       {items.map((item) => (
-        <AssignmentCard key={item.id} item={item} />
+        <AssignmentCard
+          key={item.id}
+          item={item}
+          onDeleteAssignment={onDeleteAssignment}
+          deleting={deletingAssignmentId === item.id}
+        />
       ))}
     </div>
   );
