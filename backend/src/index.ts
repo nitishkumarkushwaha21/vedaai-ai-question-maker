@@ -24,7 +24,7 @@ const bootstrap = async () => {
 
   io.attach(httpServer, {
     cors: {
-      origin: ENV.CORS_ORIGIN,
+      origin: ENV.CORS_ORIGINS,
       credentials: true,
     },
   });

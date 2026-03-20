@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, FolderOpen, Home, Plus, Settings, Sparkles, Users } from "lucide-react";
@@ -30,7 +31,7 @@ export function DesktopSidebarNav() {
     <div className="flex h-auto w-full flex-col rounded-[16px] bg-white p-6 shadow-[0_32px_48px_rgba(0,0,0,0.2),0_16px_48px_rgba(0,0,0,0.12)] md:h-[756px] md:w-[304px]">
       <div className="mb-6 flex items-center gap-3">
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white">
-          <img src="/v-icon.webp" alt="VedaAI icon" className="h-10 w-10 rounded-xl object-cover" />
+          <Image src="/v-icon.webp" alt="VedaAI icon" width={40} height={40} className="h-10 w-10 rounded-xl object-cover" />
         </span>
         <p className="text-4xl font-semibold leading-none text-slate-800">VedaAI</p>
       </div>
@@ -87,6 +88,7 @@ export function DesktopSidebarNav() {
 
         <div className="flex items-center gap-3 rounded-2xl bg-slate-100 p-3">
           {profile.schoolIconUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={profile.schoolIconUrl}
               alt="School icon"
