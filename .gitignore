@@ -54,6 +54,7 @@ veda icon.webp
 *.jpeg
 *.gif
 *.webp
+!veda-frontend/public/v-icon.webp
 *.svg
 
 # local backup folders
