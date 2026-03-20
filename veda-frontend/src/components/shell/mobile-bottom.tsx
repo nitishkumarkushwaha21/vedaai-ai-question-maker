@@ -18,7 +18,7 @@ export function MobileBottomNavbar() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3">
-      <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-2xl bg-[#16181d] p-2 shadow-[0_10px_30px_rgba(2,8,23,0.35)]">
+      <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-2xl bg-[#181818] p-2 shadow-[0_10px_30px_rgba(2,8,23,0.35)]">
         {MOBILE_NAV_ITEMS.map((item) => {
           const isActive = pathname === item.route;
           const isDisabled = !!item.disabled;

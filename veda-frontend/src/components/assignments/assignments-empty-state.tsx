@@ -29,7 +29,7 @@ export function AssignmentsEmptyState() {
       </p>
       <Link
         href={ROUTES.CREATE_ASSIGNMENT}
-        className="inline-flex rounded-full bg-[#101217] px-6 py-3 text-sm font-medium text-white"
+        className="inline-flex rounded-full bg-[#181818] px-6 py-3 text-sm font-medium text-white"
       >
         + Create Your First Assignment
       </Link>

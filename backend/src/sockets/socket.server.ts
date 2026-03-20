@@ -5,7 +5,7 @@ import { ENV } from "../config/env";
 export function createSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: ENV.CORS_ORIGIN,
+      origin: ENV.CORS_ORIGINS,
       credentials: true,
     },
   });

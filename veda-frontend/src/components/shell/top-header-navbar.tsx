@@ -19,8 +19,8 @@ export function TopHeaderNavbar({
 		.toUpperCase();
 
 	return (
-		<header className="mb-4 rounded-2xl bg-white px-3 py-2 shadow-sm md:px-4 md:py-3">
-			<div className="flex items-center justify-between gap-3">
+		<header className="mb-4 rounded-2xl bg-white px-3 py-2 shadow-sm md:h-[56px] md:w-full md:px-4 md:py-0">
+			<div className="flex items-center justify-between gap-3 md:h-full">
 				<div className="flex items-center gap-2 text-slate-500">
 					<button type="button" className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Go back">
 						<ArrowLeft className="h-4 w-4" />

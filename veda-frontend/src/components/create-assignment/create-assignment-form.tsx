@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, ArrowRight, CalendarPlus2, CirclePlus } from "lucide-react";
 import {
   createAssignmentSchema,
   type CreateAssignmentFormValues,
@@ -28,7 +29,11 @@ function buildDeterministicAssignmentId(values: CreateAssignmentFormValues) {
   return `a-${safeDate}-${signature.length}`;
 }
 
-export function CreateAssignmentForm() {
+type CreateAssignmentFormProps = {
+  onProgressChange?: (progress: number) => void;
+};
+
+export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormProps) {
   const router = useRouter();
   const [draftSaved, setDraftSaved] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -42,15 +47,30 @@ export function CreateAssignmentForm() {
       questionRows: [
         {
           type: QUESTION_TYPE_OPTIONS[0],
-          numberOfQuestions: 1,
+          numberOfQuestions: 4,
           marksPerQuestion: 1,
+        },
+        {
+          type: QUESTION_TYPE_OPTIONS[1],
+          numberOfQuestions: 3,
+          marksPerQuestion: 2,
+        },
+        {
+          type: QUESTION_TYPE_OPTIONS[2],
+          numberOfQuestions: 5,
+          marksPerQuestion: 5,
+        },
+        {
+          type: QUESTION_TYPE_OPTIONS[3],
+          numberOfQuestions: 5,
+          marksPerQuestion: 5,
         },
       ],
       additionalInstructions: "",
     },
   });
 
-  const { control, register, handleSubmit, reset, formState: { errors, isValid, dirtyFields }, setValue } = form;
+  const { control, register, handleSubmit, formState: { errors, isValid, dirtyFields }, setValue } = form;
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -77,6 +97,10 @@ export function CreateAssignmentForm() {
 
     return Math.min(100, score);
   }, [dirtyFields.questionRows, watchedAdditionalInstructions, watchedDueDate, watchedFile]);
+
+  useEffect(() => {
+    onProgressChange?.(completionPercent);
+  }, [completionPercent, onProgressChange]);
 
   const totals = useMemo(() => {
     const totalQuestions = questionRows.reduce((sum, row) => sum + (row.numberOfQuestions || 0), 0);
@@ -161,159 +185,156 @@ export function CreateAssignmentForm() {
   });
 
   return (
-    <form onSubmit={onSaveAndContinue} className="space-y-5 rounded-2xl bg-white p-4 md:p-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Assignment Details</h2>
-        <p className="text-sm text-gray-500">Basic information about your assignment</p>
-      </div>
-
-      <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs font-medium text-gray-500">
-          <span>Form Progress</span>
-          <span>{completionPercent}%</span>
+    <form onSubmit={onSaveAndContinue} className="space-y-6">
+      <div className="mx-auto w-full max-w-[810px] space-y-6 rounded-[32px] bg-[#f5f5f7] p-4 md:w-[810px] md:p-8">
+        <div>
+          <h2 className="text-[22px] font-semibold text-[#202227]">Assignment Details</h2>
+          <p className="text-[11px] text-[#9ea2aa]">Basic information about your assignment</p>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-gray-200">
-          <div
-            className="h-1.5 rounded-full bg-gray-800 transition-all duration-300"
-            style={{ width: `${completionPercent}%` }}
-          />
+
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-[#2f3238]">Upload Material (Optional)</p>
+          <FileUploadField control={control} />
         </div>
-      </div>
 
-      <FileUploadField control={control} />
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Due Date</label>
-        <input
-          type="date"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          {...register("dueDate")}
-        />
-        {errors.dueDate ? <p className="text-xs text-rose-600">{errors.dueDate.message}</p> : null}
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Question Type</label>
-        <div className="space-y-2">
-          {fields.map((field, index) => (
-            (() => {
-              const row = questionRows[index];
-              const rowError = rowErrors?.[index];
-              const numberOfQuestions = Math.max(1, row?.numberOfQuestions ?? 1);
-              const marksPerQuestion = Math.max(1, row?.marksPerQuestion ?? 1);
-
-              return (
-            <QuestionTypeRow
-              key={field.id}
-              index={index}
-              register={register}
-              numberOfQuestions={numberOfQuestions}
-              marksPerQuestion={marksPerQuestion}
-              onIncrementQuestions={() => {
-                setValue(`questionRows.${index}.numberOfQuestions`, numberOfQuestions + 1, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-              onDecrementQuestions={() => {
-                setValue(`questionRows.${index}.numberOfQuestions`, Math.max(1, numberOfQuestions - 1), {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-              onIncrementMarks={() => {
-                setValue(`questionRows.${index}.marksPerQuestion`, marksPerQuestion + 1, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-              onDecrementMarks={() => {
-                setValue(`questionRows.${index}.marksPerQuestion`, Math.max(1, marksPerQuestion - 1), {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-              rowErrors={{
-                type: rowError?.type?.message,
-                numberOfQuestions: rowError?.numberOfQuestions?.message,
-                marksPerQuestion: rowError?.marksPerQuestion?.message,
-              }}
-              onRemove={() => remove(index)}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-[#2f3238]">Due Date</label>
+          <div className="relative">
+            <input
+              type="date"
+              className="h-9 w-full rounded-[10px] border border-[#e2e4e8] bg-white px-3 pr-9 text-[11px] text-[#2a2d33] [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-0"
+              placeholder="Choose a chapter"
+              {...register("dueDate")}
             />
-              );
-            })()
-          ))}
+            <CalendarPlus2 className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8f949d]" />
+          </div>
+          {errors.dueDate ? <p className="text-[10px] text-rose-600">{errors.dueDate.message}</p> : null}
         </div>
 
-        {errors.questionRows?.message ? <p className="text-xs text-rose-600">{errors.questionRows.message}</p> : null}
+        <div className="space-y-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_118px_86px] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_132px_92px]">
+            <label className="text-[11px] font-semibold text-[#2f3238]">Question Type</label>
+            <p className="pb-1 text-center text-[10px] font-medium text-[#8e939c]">No of Questions</p>
+            <p className="pb-1 text-center text-[10px] font-medium text-[#8e939c]">Marks</p>
+          </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            append({
-              type: QUESTION_TYPE_OPTIONS[0],
-              numberOfQuestions: 1,
-              marksPerQuestion: 1,
-            })
-          }
-          className="inline-flex rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white"
-        >
-          + Add Question Type
-        </button>
+          <div className="space-y-2">
+            {fields.map((field, index) => (
+              (() => {
+                const row = questionRows[index];
+                const rowError = rowErrors?.[index];
+                const numberOfQuestions = Math.max(1, row?.numberOfQuestions ?? 1);
+                const marksPerQuestion = Math.max(1, row?.marksPerQuestion ?? 1);
+
+                return (
+                  <QuestionTypeRow
+                    key={field.id}
+                    index={index}
+                    register={register}
+                    numberOfQuestions={numberOfQuestions}
+                    marksPerQuestion={marksPerQuestion}
+                    onIncrementQuestions={() => {
+                      setValue(`questionRows.${index}.numberOfQuestions`, numberOfQuestions + 1, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                    onDecrementQuestions={() => {
+                      setValue(`questionRows.${index}.numberOfQuestions`, Math.max(1, numberOfQuestions - 1), {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                    onIncrementMarks={() => {
+                      setValue(`questionRows.${index}.marksPerQuestion`, marksPerQuestion + 1, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                    onDecrementMarks={() => {
+                      setValue(`questionRows.${index}.marksPerQuestion`, Math.max(1, marksPerQuestion - 1), {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                    rowErrors={{
+                      type: rowError?.type?.message,
+                      numberOfQuestions: rowError?.numberOfQuestions?.message,
+                      marksPerQuestion: rowError?.marksPerQuestion?.message,
+                    }}
+                    onRemove={() => remove(index)}
+                  />
+                );
+              })()
+            ))}
+          </div>
+
+          {errors.questionRows?.message ? <p className="text-[10px] text-rose-600">{errors.questionRows.message}</p> : null}
+
+          <button
+            type="button"
+            onClick={() =>
+              append({
+                type: QUESTION_TYPE_OPTIONS[0],
+                numberOfQuestions: 1,
+                marksPerQuestion: 1,
+              })
+            }
+            className="inline-flex items-center gap-2 rounded-full px-0 py-1 text-[11px] font-medium text-[#2f3238]"
+          >
+            <CirclePlus className="h-4 w-4 text-[#262a30]" />
+            Add Question Type
+          </button>
+        </div>
+
+        <div className="text-right text-[12px] font-medium text-[#2f3238]">
+          <p>Total Questions : {totals.totalQuestions}</p>
+          <p>Total Marks: {totals.totalMarks}</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-[#2f3238]">Additional Information (For better output)</label>
+          <textarea
+            rows={3}
+            placeholder="e.g Generate a question paper for 3 hour exam duration..."
+            className="w-full rounded-[10px] border border-[#e2e4e8] bg-white px-3 py-2 text-[11px] text-[#2a2d33]"
+            {...register("additionalInstructions")}
+          />
+          {errors.additionalInstructions ? <p className="text-[10px] text-rose-600">{errors.additionalInstructions.message}</p> : null}
+        </div>
       </div>
 
-      <div className="text-right text-sm text-gray-700">
-        <p>Total Questions: {totals.totalQuestions}</p>
-        <p>Total Marks: {totals.totalMarks}</p>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Additional Information (For better output)</label>
-        <textarea
-          rows={4}
-          placeholder="e.g. Generate a question paper for 1 hour exam duration..."
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          {...register("additionalInstructions")}
-        />
-        {errors.additionalInstructions ? <p className="text-xs text-rose-600">{errors.additionalInstructions.message}</p> : null}
-      </div>
-
-      {draftSaved ? <p className="text-xs text-emerald-600">Draft saved to local store</p> : null}
-      {submitError ? <p className="text-xs text-rose-600">{submitError}</p> : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="mx-auto flex w-full max-w-[810px] items-center justify-between px-1">
         <button
           type="button"
           onClick={() => {
-            reset();
-            setDraftSaved(false);
+            router.back();
           }}
-          className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-gray-600"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#e3e5ea] bg-white px-4 py-2 text-[11px] font-semibold text-[#4d535d]"
         >
-          Reset Form
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Previous
         </button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="submit"
-            disabled={!isValid || submitting}
-            className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting ? "Saving..." : "Save Draft & Continue"}
-          </button>
-          <button
-            type="button"
-            onClick={onGenerateNow}
-            disabled={!isValid || submitting}
-            className="rounded-full bg-gray-900 px-6 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting ? "Saving..." : "Generate Question Paper"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onGenerateNow}
+          disabled={!isValid || submitting}
+          className="inline-flex items-center gap-1.5 rounded-full bg-[#181818] px-5 py-2 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submitting ? "Saving..." : "Next"}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="mx-auto w-full max-w-[810px] space-y-1 px-1">
+        {draftSaved ? <p className="text-[10px] text-emerald-600">Draft saved and synced.</p> : null}
+        {submitError ? <p className="text-[10px] text-rose-600">{submitError}</p> : null}
+        {!submitError ? <p className="text-[10px] text-[#9aa0a8]">Progress: {completionPercent}%</p> : null}
       </div>
     </form>
   );

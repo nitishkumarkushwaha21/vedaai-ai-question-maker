@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, FolderOpen, Grid3X3, Home, Plus, Settings, Sparkles, Users } from "lucide-react";
+import { BookOpen, FolderOpen, Home, Plus, Settings, Sparkles, Users } from "lucide-react";
 import { useAuthStore } from "@/auth/auth.store";
 import { SIDEBAR_NAV_ITEMS } from "@/constants/nav-items";
 import { ROUTES } from "@/lib/routes";
@@ -27,17 +27,17 @@ export function DesktopSidebarNav() {
     .toUpperCase();
 
   return (
-    <div className="flex h-auto flex-col rounded-3xl bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.12)] md:h-[calc(100vh-40px)]">
+    <div className="flex h-auto w-full flex-col rounded-[16px] bg-white p-6 shadow-[0_32px_48px_rgba(0,0,0,0.2),0_16px_48px_rgba(0,0,0,0.12)] md:h-[756px] md:w-[304px]">
       <div className="mb-6 flex items-center gap-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
-          <Grid3X3 className="h-5 w-5" />
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white">
+          <img src="/v-icon.webp" alt="VedaAI icon" className="h-10 w-10 rounded-xl object-cover" />
         </span>
         <p className="text-4xl font-semibold leading-none text-slate-800">VedaAI</p>
       </div>
 
       <Link
         href={ROUTES.CREATE_ASSIGNMENT}
-        className="mb-6 inline-flex items-center justify-center gap-2 rounded-full border-2 border-orange-400 bg-[#1f1f1f] px-4 py-2 text-sm font-medium text-white"
+        className="mb-6 inline-flex items-center justify-center gap-2 rounded-full border-2 border-orange-400 bg-[#181818] px-4 py-2 text-sm font-medium text-white"
       >
         <Plus className="h-4 w-4" />
         Create Assignment

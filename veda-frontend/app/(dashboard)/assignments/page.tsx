@@ -111,7 +111,7 @@ export default function AssignmentsPage() {
   };
 
   return (
-    <section className="space-y-4 pb-20 md:pb-4">
+    <section className="relative space-y-3 pb-24 md:pb-28">
       <AssignmentsPageHeader totalCount={filteredItems.length} />
 
       <AssignmentsToolbar searchValue={search} onSearchChange={setSearch} />
@@ -130,14 +130,19 @@ export default function AssignmentsPage() {
         )
       ) : null}
 
-      {filteredItems.length > 0 ? (
-        <Link
-          href={ROUTES.CREATE_ASSIGNMENT}
-          className="fixed bottom-5 left-1/2 z-40 hidden -translate-x-1/2 rounded-full bg-[#111318] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_24px_rgba(2,8,23,0.35)] md:inline-flex"
-        >
-          + Create Assignment
-        </Link>
-      ) : null}
+      <div className="pointer-events-none fixed bottom-0 left-[calc(50vw-405px)] z-40 hidden h-[73px] w-[1125px] lg:block">
+        <div className="relative h-[73px] overflow-hidden py-[10px] [background:linear-gradient(176.12deg,rgba(234,234,234,0)_3.17%,#DADADA_81.22%)]">
+          <div className="absolute inset-0 z-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_100%)] backdrop-blur-[40px]" />
+          <div className="pointer-events-auto absolute left-1/2 top-[10px] z-20 -translate-x-1/2">
+            <Link
+              href={ROUTES.CREATE_ASSIGNMENT}
+              className="inline-flex h-[46px] w-[208px] items-center justify-center gap-1 rounded-full border-[1.5px] border-[#2f2f2f] bg-[#181818] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_24px_rgba(2,8,23,0.35)]"
+            >
+              + Create Assignment
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {filteredItems.length > 0 ? (
         <Link

@@ -27,15 +27,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           : "Assignment";
 
   return (
-    <div className="min-h-screen bg-[#f3f3f3] text-[#222]">
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 p-3 md:flex-row md:p-5">
-        <aside className="hidden md:block md:w-[260px] lg:w-[280px]">
+    <div className="min-h-screen bg-[#e8eaee] text-[#222]">
+      <div className="flex w-full flex-col gap-3 p-3 md:flex-row md:p-3">
+        <aside className="hidden md:block md:h-[756px] md:w-[304px] md:shrink-0">
           <DesktopSidebarNav />
         </aside>
 
-        <main className="min-w-0 flex-1 rounded-2xl border border-[#eceff3] bg-white p-3 md:p-5">
-          <TopHeaderNavbar title={headerTitle} userName={userName} />
-          {children}
+        <main className="min-w-0 flex-1 rounded-2xl border border-[#d7dbe2] bg-[#eef1f5] p-3 md:p-5">
+          <div className="mx-auto w-full max-w-[1100px]">
+            <TopHeaderNavbar title={headerTitle} userName={userName} />
+            {children}
+          </div>
         </main>
       </div>
 

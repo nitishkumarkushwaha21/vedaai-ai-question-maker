@@ -23,7 +23,7 @@ export function createApp(io: Server) {
 
   app.use(
     cors({
-      origin: ENV.CORS_ORIGIN,
+      origin: ENV.CORS_ORIGINS,
       credentials: true,
     }),
   );
