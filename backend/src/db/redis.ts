@@ -9,8 +9,8 @@ import { ENV } from "../config/env";
 export function createRedisConnection() {
   const parsed = new URL(ENV.REDIS_URL);
   const host = parsed.hostname;
-  const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
-  const shouldUseTls = parsed.protocol === "rediss:" || !isLocalHost;
+  const isUpstashHost = host.includes("upstash");
+  const shouldUseTls = parsed.protocol === "rediss:" || isUpstashHost;
   const dbFromPath = parsed.pathname && parsed.pathname !== "/" ? Number(parsed.pathname.slice(1)) : undefined;
 
   return {
