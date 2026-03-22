@@ -62,27 +62,27 @@ const styles = StyleSheet.create({
   },
   questionRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
+    alignItems: "flex-start",
   },
   questionMain: {
-    flexGrow: 1,
-    flexShrink: 1,
+    width: "84%",
+    paddingRight: 8,
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
-    gap: 4,
+    flexWrap: "nowrap",
   },
   questionText: {
+    flexGrow: 1,
     flexShrink: 1,
   },
   bold: {
     fontWeight: "bold",
   },
   marks: {
-    width: 78,
+    width: "16%",
     textAlign: "right",
     fontWeight: "bold",
+    flexShrink: 0,
   },
   optionsRow: {
     marginTop: 3,
@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
   difficultyText: {
     color: "#1f2937",
     fontSize: 10,
+    marginLeft: 4,
     marginTop: 1,
   },
   difficultyChip: {
@@ -106,6 +107,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     fontSize: 9,
     color: "#111827",
+    marginLeft: 4,
     marginTop: 1,
   },
   endText: {
