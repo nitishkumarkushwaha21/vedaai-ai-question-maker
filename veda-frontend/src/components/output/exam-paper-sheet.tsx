@@ -4,15 +4,16 @@
  * This file renders the printable exam sheet layout.
  */
 import type { QuestionPaper } from "@/types/question-paper";
-import { QuestionSectionBlock } from "@/components/output/question-section-block";
+import { QuestionSectionBlock, type DifficultyDisplayMode } from "@/components/output/question-section-block";
 
 type ExamPaperSheetProps = {
   paper: QuestionPaper;
+  difficultyDisplayMode?: DifficultyDisplayMode;
 };
 
-export function ExamPaperSheet({ paper }: ExamPaperSheetProps) {
+export function ExamPaperSheet({ paper, difficultyDisplayMode = "color" }: ExamPaperSheetProps) {
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-6 md:py-8">
+    <article className="print-paper rounded-3xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-6 md:py-8">
       <header className="mb-5 space-y-0.5 text-center">
         <h2 className="text-[26px] font-semibold tracking-tight text-slate-900 md:text-[38px]">{paper.schoolName}</h2>
         <p className="text-base font-semibold text-slate-700 md:text-[30px]">Subject: {paper.subject}</p>
@@ -34,7 +35,7 @@ export function ExamPaperSheet({ paper }: ExamPaperSheetProps) {
 
       <div className="space-y-7">
         {paper.sections.map((section) => (
-          <QuestionSectionBlock key={section.id} section={section} />
+          <QuestionSectionBlock key={section.id} section={section} difficultyDisplayMode={difficultyDisplayMode} />
         ))}
       </div>
 

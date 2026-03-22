@@ -3,7 +3,7 @@
 import { SignUp } from "@clerk/nextjs";
 import { ROUTES } from "@/lib/routes";
 
-export default function SignupPage() {
+export default function SignupCatchAllPage() {
   return (
     <section className="rounded-2xl border border-[#eceff3] bg-white p-5 shadow-sm md:p-6">
       <SignUp

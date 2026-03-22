@@ -25,7 +25,7 @@ export const createAssignmentSchema = z.object({
         const type = file.type.toLowerCase();
         const name = file.name.toLowerCase();
         const isPdf = type === "application/pdf" || name.endsWith(".pdf");
-        const isTxt = type === "text/plain" || name.endsWith(".txt");
+        const isTxt = type === "text/plain" || type.startsWith("text/") || name.endsWith(".txt");
         return isPdf || isTxt;
       },
       "Only PDF or TXT files are allowed",

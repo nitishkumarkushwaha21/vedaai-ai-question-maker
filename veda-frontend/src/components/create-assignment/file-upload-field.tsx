@@ -25,7 +25,7 @@ export function FileUploadField({ control }: FileUploadFieldProps) {
             <input
               type="file"
               className="hidden"
-              accept="application/pdf,text/plain"
+              accept=".pdf,.txt,application/pdf,text/plain,text/*"
               onChange={(event) => {
                 const selected = event.target.files?.[0];
                 field.onChange(selected);

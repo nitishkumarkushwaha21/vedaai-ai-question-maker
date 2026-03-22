@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { AssignmentsGrid } from "@/components/assignments/assignments-grid";
+import { AssignmentsGridSkeleton } from "@/components/assignments/assignments-grid-skeleton";
 import { AssignmentsEmptyState } from "@/components/assignments/assignments-empty-state";
 import { AssignmentsToolbar } from "@/components/assignments/assignments-toolbar";
 import { AssignmentsPageHeader } from "@/components/assignments/assignments-page-header";
@@ -117,7 +118,7 @@ export default function AssignmentsPage() {
 
       <AssignmentsToolbar searchValue={search} onSearchChange={setSearch} />
 
-      {loading ? <p className="text-sm text-slate-500">Loading assignments...</p> : null}
+      {loading ? <AssignmentsGridSkeleton /> : null}
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       {!loading && !error ? (
         hasAssignments ? (

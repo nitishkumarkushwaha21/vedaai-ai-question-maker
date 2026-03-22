@@ -25,7 +25,12 @@ Production-ready full-stack implementation of the assessment brief in [vedaai_as
   - Dedicated visual journey page for assignment creation and teacher collaboration.
 - Assignment management improvements:
   - Assignment detail page with rename support.
-  - Generated output JSON download from assignment detail view.
+  - Direct PDF download from assignment detail view using `@react-pdf/renderer`.
+  - Difficulty display tags on assignment detail page before export:
+    - No difficulty (show only question + marks)
+    - `[easy]` text mode
+    - Color-badge mode
+  - Downloaded PDF reflects selected difficulty display mode (no AI regenerate needed).
 - AI Toolkit visual upgrades:
   - Draft summary, progress bar, regenerate-first behavior, and cleaner empty states.
 - Better generation input quality:
@@ -34,11 +39,11 @@ Production-ready full-stack implementation of the assessment brief in [vedaai_as
   - Optional source upload supports PDF and TXT (max 10MB).
 - Output rendering improvements:
   - Difficulty badge chips in generated paper view.
-  - Print-friendly layout for browser print-to-PDF workflow.
+  - Direct and consistent PDF generation via `@react-pdf/renderer`.
 
 ### Explicit feature checklist requested
 
-- Assignment detail page improvements: rename flow, detail summary, generated output JSON download.
+- Assignment detail page improvements: rename flow, detail summary, direct PDF download.
 - Profile page and persistence: saved profile fields persist and reflect in desktop UI.
 - Login-linked email behavior: profile email field is bound to authenticated user email and remains read-only.
 - Form improvements for better generation: tighter validation, improved upload handling, structured generation payload.
@@ -53,10 +58,10 @@ Production-ready full-stack implementation of the assessment brief in [vedaai_as
 | Core assessment features | ✅ Complete |
 | Regenerate flow | ✅ Complete |
 | Difficulty badge UI | ✅ Complete |
-| Dedicated PDF binary export endpoint | ⚠️ Partial |
+| Direct PDF download (`@react-pdf/renderer`) | ✅ Complete |
 
 > [!NOTE]
-> PDF output is currently available via browser print-to-PDF. A dedicated backend PDF download endpoint is still pending.
+> PDF download is generated client-side using `@react-pdf/renderer`, so browser print headers/footers are not included.
 
 ## What this project does
 
@@ -66,7 +71,7 @@ Teacher workflow end-to-end:
 - Track generation in real time using Socket.IO events.
 - Persist assignments and generated papers in MongoDB.
 - View generated paper in clean desktop/mobile layouts.
-- Regenerate paper and download output (JSON export + print-to-PDF view).
+- Regenerate paper and download clean PDF output directly.
 
 ## Tech stack
 
@@ -74,6 +79,7 @@ Frontend:
 - Next.js (App Router) + TypeScript
 - Zustand
 - React Hook Form + Zod
+- @react-pdf/renderer
 - Tailwind CSS
 - Socket.IO Client
 - Clerk auth
@@ -136,11 +142,9 @@ flowchart LR
 
 - Regenerate paper: done.
 - Difficulty badges: done (rendered as badge chips in paper sections).
-- Download as PDF: partial.
-  - Currently supported:
-    - JSON download from assignment detail page.
-    - Print-friendly paper rendering that can be saved as PDF from browser print dialog.
-  - Not yet implemented: dedicated server/client PDF binary export endpoint.
+- Download as PDF: done.
+  - Implemented with `@react-pdf/renderer` for direct export.
+  - Export respects selected difficulty display mode (`none`, `text`, `color`).
 
 ## Extra features added beyond brief
 
@@ -207,11 +211,12 @@ Room convention:
 
 Frontend validation in [veda-frontend/src/modules/assignments/schema.ts](veda-frontend/src/modules/assignments/schema.ts):
 - PDF and TXT supported.
+- TXT MIME handling supports browser variations (`text/plain`, `text/*`) plus `.txt` extension.
 - Max file size 10MB.
 
 Backend extraction in [backend/src/modules/generation/file-extractor.ts](backend/src/modules/generation/file-extractor.ts):
 - PDF text extraction.
-- TXT plain text extraction.
+- TXT plain text extraction with MIME/extension fallback support.
 
 ## Environment variables
 
@@ -227,6 +232,42 @@ Backend ([backend/src/config/env.ts](backend/src/config/env.ts)):
 Frontend ([veda-frontend/src/lib/env.ts](veda-frontend/src/lib/env.ts)):
 - NEXT_PUBLIC_API_URL
 - NEXT_PUBLIC_SOCKET_URL
+
+### Quick .env file structure (easy setup)
+
+Create these files first:
+
+- [backend/.env](backend/.env)
+- [veda-frontend/.env](veda-frontend/.env)
+
+Backend template ([backend/.env](backend/.env)):
+
+```dotenv
+PORT=4000
+CORS_ORIGIN=http://localhost:3000
+
+MONGO_URI=mongodb://127.0.0.1:27017/veda-ai
+REDIS_URL=redis://127.0.0.1:6379
+
+CLERK_SECRET_KEY=sk_test_xxx
+
+OPENROUTER_API_KEY=or_xxx
+OPENROUTER_MODEL=openai/gpt-4o-mini
+```
+
+Frontend template ([veda-frontend/.env](veda-frontend/.env)):
+
+```dotenv
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+```
+
+Setup notes:
+
+- Keep backend on port `4000` to match frontend defaults above.
+- If you change backend port/host, update both `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SOCKET_URL`.
+- Use real Clerk/OpenRouter keys for full auth + AI generation.
 
 ## Local development
 
@@ -271,14 +312,3 @@ cd ../backend && npm run build
 - Set CORS origin(s) for frontend host(s).
 - Ensure Redis and Mongo are reachable from backend runtime.
 - Validate Clerk and OpenRouter secrets in production.
-
-## Assessment checklist summary
-
-- Assignment form and validation: complete
-- Zustand + WebSocket management: complete
-- Structured AI generation flow: complete
-- Node/Express + Mongo + Redis + BullMQ + Socket updates: complete
-- Output rendering with sections/difficulty/marks: complete
-- Bonus regenerate: complete
-- Bonus difficulty badges: complete
-- Bonus PDF export endpoint: partial (print-to-PDF and JSON download available)

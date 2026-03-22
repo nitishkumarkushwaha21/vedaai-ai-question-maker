@@ -6,10 +6,12 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Download, FileText, Loader2, PencilLine } from "lucide-react";
 import { ENV } from "@/lib/env";
+import { downloadQuestionPaperPdf } from "@/lib/pdf";
 import { ROUTES } from "@/lib/routes";
 import type { AssignmentDetail, AssignmentGenerationSnapshot } from "@/types/assignment";
 import type { QuestionPaper } from "@/types/question-paper";
 import { ExamPaperSheet } from "@/components/output/exam-paper-sheet";
+import type { DifficultyDisplayMode } from "@/components/output/question-section-block";
 
 type AssignmentDetailData = {
   assignment: AssignmentDetail;
@@ -40,7 +42,9 @@ export default function AssignmentDetailPage() {
   const [renameMode, setRenameMode] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [difficultyDisplayMode, setDifficultyDisplayMode] = useState<DifficultyDisplayMode>("color");
 
   useEffect(() => {
     if (!assignmentId) {
@@ -98,18 +102,24 @@ export default function AssignmentDetailPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }, [data?.assignment.status]);
 
-  const downloadPaperJson = () => {
+  const downloadPaperPdf = async () => {
     if (!data?.paper) {
       return;
     }
 
-    const blob = new Blob([JSON.stringify(data.paper, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${data.assignment.id}-paper.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    setDownloadingPdf(true);
+
+    try {
+      await downloadQuestionPaperPdf({
+        paper: data.paper,
+        fileName: `${data.assignment.id}-paper.pdf`,
+        difficultyDisplayMode,
+      });
+    } catch (downloadError) {
+      setError(downloadError instanceof Error ? downloadError.message : "Failed to download PDF");
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleRename = async () => {
@@ -252,21 +262,53 @@ export default function AssignmentDetailPage() {
 
           {data.paper ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                  <FileText className="h-4 w-4" />
-                  Generated question paper
+              <div className="no-print space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                    <FileText className="h-4 w-4" />
+                    Generated question paper
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={downloadPaperPdf}
+                      disabled={downloadingPdf}
+                      className="inline-flex items-center gap-1 rounded-full bg-[#181818] px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Download className="h-4 w-4" />
+                      {downloadingPdf ? "Generating PDF..." : "Download PDF"}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={downloadPaperJson}
-                  className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-                >
-                  <Download className="h-4 w-4" />
-                  Download
-                </button>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-medium text-slate-600">Difficulty view:</span>
+                  <button
+                    type="button"
+                    onClick={() => setDifficultyDisplayMode("none")}
+                    className={`rounded-full border px-3 py-1 ${difficultyDisplayMode === "none" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}
+                  >
+                    No difficulty
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDifficultyDisplayMode("text")}
+                    className={`rounded-full border px-3 py-1 ${difficultyDisplayMode === "text" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}
+                  >
+                    [easy] text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDifficultyDisplayMode("color")}
+                    className={`rounded-full border px-3 py-1 ${difficultyDisplayMode === "color" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}
+                  >
+                    Color badge
+                  </button>
+                </div>
               </div>
-              <ExamPaperSheet paper={data.paper} />
+              <div id="print-area">
+                <ExamPaperSheet paper={data.paper} difficultyDisplayMode={difficultyDisplayMode} />
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">

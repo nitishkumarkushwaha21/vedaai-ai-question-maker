@@ -51,7 +51,6 @@ export default function AIToolkitPage() {
 	const [isStarting, setIsStarting] = useState(false);
 	const [isRegenerating, setIsRegenerating] = useState(false);
 	const [startError, setStartError] = useState<string | null>(null);
-	const [resultInfo, setResultInfo] = useState<string | null>(null);
 	const [activeJob, setActiveJob] = useState<GenerationJob | null>(null);
 	const [activePaper, setActivePaper] = useState<QuestionPaper | null>(null);
 	const latestFetchedResultJobIdRef = useRef<string | null>(null);
@@ -106,11 +105,6 @@ export default function AIToolkitPage() {
 			| ApiErrorEnvelope;
 
 		if (resultResponse.status === 202) {
-			if (resultPayload.ok) {
-				setResultInfo(resultPayload.meta?.message ?? "Result not ready yet. Use retry after a few seconds.");
-			} else {
-				setResultInfo("Result not ready yet. Use retry after a few seconds.");
-			}
 			return;
 		}
 
@@ -142,7 +136,6 @@ export default function AIToolkitPage() {
 			updateGenerationSubmitStatus(resultData.job.status);
 		}
 
-		setResultInfo("Latest generated paper loaded from backend.");
 		latestFetchedResultJobIdRef.current = jobId;
 	}, [getToken, resolvedUserId, updateGenerationSubmitStatus]);
 
@@ -191,7 +184,6 @@ export default function AIToolkitPage() {
 		setIsStarting(true);
 		setActivePaper(null);
 		setStartError(null);
-		setResultInfo(null);
 
 		try {
 			const token = await getToken();
@@ -244,7 +236,6 @@ export default function AIToolkitPage() {
 
 			if (data.job) {
 				setActiveJob(data.job);
-				setResultInfo("Generation started. Waiting for socket completion...");
 				latestFetchedResultJobIdRef.current = null;
 				updateGenerationSubmitStatus(data.job.status);
 			}
@@ -278,7 +269,6 @@ export default function AIToolkitPage() {
 		setIsRegenerating(true);
 		setActivePaper(null);
 		setStartError(null);
-		setResultInfo("Regeneration started. Waiting for socket completion...");
 
 		try {
 			const token = await getToken();
@@ -358,8 +348,6 @@ export default function AIToolkitPage() {
 					</div>
 
 					{startError ? <p className="mt-2 text-xs text-rose-600">{startError}</p> : null}
-					{resultInfo ? <p className="mt-1 text-xs text-slate-600">{resultInfo}</p> : null}
-
 					<div className="mt-3 border-t border-slate-200 pt-2">
 						<div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
 							<div

@@ -9,7 +9,7 @@ export async function extractTextFromUploadedFile(file?: Express.Multer.File): P
   const filename = (file.originalname || "").toLowerCase();
   const hasPdfHeader = file.buffer.subarray(0, 4).toString("ascii") === "%PDF";
   const isPdf = mimetype === "application/pdf" || filename.endsWith(".pdf") || hasPdfHeader;
-  const isTxt = mimetype === "text/plain" || filename.endsWith(".txt");
+  const isTxt = mimetype === "text/plain" || mimetype.startsWith("text/") || filename.endsWith(".txt");
 
   if (isTxt) {
     const text = file.buffer.toString("utf-8").replace(/\s+/g, " ").trim();
