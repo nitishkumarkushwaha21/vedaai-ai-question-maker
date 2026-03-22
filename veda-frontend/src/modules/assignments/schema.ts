@@ -21,7 +21,13 @@ export const createAssignmentSchema = z.object({
   file: z
     .instanceof(File)
     .refine(
-      (file) => file.type === "application/pdf" || file.type === "text/plain",
+      (file) => {
+        const type = file.type.toLowerCase();
+        const name = file.name.toLowerCase();
+        const isPdf = type === "application/pdf" || name.endsWith(".pdf");
+        const isTxt = type === "text/plain" || name.endsWith(".txt");
+        return isPdf || isTxt;
+      },
       "Only PDF or TXT files are allowed",
     )
     .refine((file) => file.size <= 10 * 1024 * 1024, "File size must be 10MB or less")

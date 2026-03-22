@@ -5,7 +5,13 @@ export async function extractTextFromUploadedFile(file?: Express.Multer.File): P
     return undefined;
   }
 
-  if (file.mimetype === "text/plain") {
+  const mimetype = (file.mimetype || "").toLowerCase();
+  const filename = (file.originalname || "").toLowerCase();
+  const hasPdfHeader = file.buffer.subarray(0, 4).toString("ascii") === "%PDF";
+  const isPdf = mimetype === "application/pdf" || filename.endsWith(".pdf") || hasPdfHeader;
+  const isTxt = mimetype === "text/plain" || filename.endsWith(".txt");
+
+  if (isTxt) {
     const text = file.buffer.toString("utf-8").replace(/\s+/g, " ").trim();
     if (!text) {
       throw new Error("FILE_TEXT_EXTRACTION_FAILED: Uploaded TXT file is empty");
@@ -14,7 +20,7 @@ export async function extractTextFromUploadedFile(file?: Express.Multer.File): P
     return text.slice(0, 12000);
   }
 
-  if (file.mimetype !== "application/pdf") {
+  if (!isPdf) {
     throw new Error("UNSUPPORTED_FILE_TYPE: Only PDF or TXT files are allowed");
   }
 
