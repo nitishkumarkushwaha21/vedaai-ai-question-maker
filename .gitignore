@@ -50,6 +50,8 @@ veda icon.webp
 *.md
 !README.md
 *.png
+!veda-frontend/public/image-3.png
+!veda-frontend/public/image-4.png
 *.jpg
 *.jpeg
 *.gif

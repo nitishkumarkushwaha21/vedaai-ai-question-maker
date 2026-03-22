@@ -20,7 +20,7 @@ export default function DashboardHomePage() {
         <figure className="journey-image-shell journey-image-frame w-full max-w-[1060px]">
           {!assignmentImageLoaded ? <div className="journey-image-skeleton" aria-hidden="true" /> : null}
           <Image
-            src="/image%203.png"
+            src="/image-3.png"
             alt="How VedaAI works - AI-assisted assignment creation journey"
             fill
             sizes="(max-width: 1060px) 100vw, 1060px"
@@ -42,7 +42,7 @@ export default function DashboardHomePage() {
         <figure className="journey-image-shell journey-image-frame w-full max-w-[1060px]">
           {!collaborationImageLoaded ? <div className="journey-image-skeleton" aria-hidden="true" /> : null}
           <Image
-            src="/image%204.png"
+            src="/image-4.png"
             alt="How VedaAI works - teacher collaboration journey"
             fill
             sizes="(max-width: 1060px) 100vw, 1060px"

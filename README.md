@@ -2,6 +2,62 @@
 
 Production-ready full-stack implementation of the assessment brief in [vedaai_assessment_.md](vedaai_assessment_.md).
 
+![Status](https://img.shields.io/badge/Status-Deployment%20Ready-16a34a)
+![Frontend](https://img.shields.io/badge/Frontend-Next.js%2016-0f172a)
+![Backend](https://img.shields.io/badge/Backend-Node%20%2B%20Express-2563eb)
+![Queue](https://img.shields.io/badge/Queue-BullMQ-f59e0b)
+![Database](https://img.shields.io/badge/Database-MongoDB-22c55e)
+![Realtime](https://img.shields.io/badge/Realtime-Socket.IO-a855f7)
+
+## Extra Features Added (Top Highlights)
+
+> [!IMPORTANT]
+> Beyond the base assessment, this project includes multiple UX and product upgrades.
+
+- Profile module with persistent save:
+  - Name, class, subject, school name/location/logo URL saved via Zustand persistence.
+  - Logged-in email auto-bound as read-only.
+  - Desktop navbar shows only first word of saved name.
+- Desktop shell improvements:
+  - School name box above Settings in desktop sidebar.
+  - Profile and account controls improved for desktop/mobile.
+- Home workflow section:
+  - Dedicated visual journey page for assignment creation and teacher collaboration.
+- Assignment management improvements:
+  - Assignment detail page with rename support.
+  - Generated output JSON download from assignment detail view.
+- AI Toolkit visual upgrades:
+  - Draft summary, progress bar, regenerate-first behavior, and cleaner empty states.
+- Better generation input quality:
+  - Section grouping tag support (`question-type`, `difficulty`, `marks`).
+  - Structured prompt layering with profile and source material context.
+  - Optional source upload supports PDF and TXT (max 10MB).
+- Output rendering improvements:
+  - Difficulty badge chips in generated paper view.
+  - Print-friendly layout for browser print-to-PDF workflow.
+
+### Explicit feature checklist requested
+
+- Assignment detail page improvements: rename flow, detail summary, generated output JSON download.
+- Profile page and persistence: saved profile fields persist and reflect in desktop UI.
+- Login-linked email behavior: profile email field is bound to authenticated user email and remains read-only.
+- Form improvements for better generation: tighter validation, improved upload handling, structured generation payload.
+- Home workflow page: dedicated visual journey sections with responsive media presentation.
+- Improved AI Toolkit visual behavior: progress indicator, regenerate-first behavior, cleaner empty-state handling.
+- Custom section grouping behavior in generated paper: supports grouping by question type, difficulty, or marks.
+
+## Quick Status
+
+| Area | Status |
+|---|---|
+| Core assessment features | ✅ Complete |
+| Regenerate flow | ✅ Complete |
+| Difficulty badge UI | ✅ Complete |
+| Dedicated PDF binary export endpoint | ⚠️ Partial |
+
+> [!NOTE]
+> PDF output is currently available via browser print-to-PDF. A dedicated backend PDF download endpoint is still pending.
+
 ## What this project does
 
 Teacher workflow end-to-end:
@@ -79,7 +135,7 @@ flowchart LR
 ### Bonus features
 
 - Regenerate paper: done.
-- Difficulty badges: done.
+- Difficulty badges: done (rendered as badge chips in paper sections).
 - Download as PDF: partial.
   - Currently supported:
     - JSON download from assignment detail page.

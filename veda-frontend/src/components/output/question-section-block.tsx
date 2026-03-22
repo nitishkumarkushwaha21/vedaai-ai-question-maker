@@ -4,6 +4,7 @@
  * This file keeps section content in printable exam-style text blocks.
  */
 import type { PaperSection } from "@/types/question-paper";
+import { DifficultyBadge } from "@/components/output/difficulty-badge";
 
 type QuestionSectionBlockProps = {
   section: PaperSection;
@@ -41,14 +42,14 @@ export function QuestionSectionBlock({ section }: QuestionSectionBlockProps) {
       <ol className="space-y-2 pl-4 text-[11px] leading-relaxed text-slate-800 md:text-sm">
         {section.questions.map((question, index) => {
           const mcq = splitMcqQuestion(question.text);
-          const difficultyLabel = question.difficulty.toLowerCase();
 
           return (
             <li key={question.id} className="space-y-1.5 leading-relaxed">
               {mcq ? (
                 <>
                   <p>
-                    <span className="font-medium">{index + 1}. [{difficultyLabel}] </span>
+                    <span className="font-medium">{index + 1}. </span>
+                    <span className="mr-1.5 inline-flex align-middle"><DifficultyBadge difficulty={question.difficulty} /></span>
                     {mcq.stem} <span className="font-medium">[{question.marks} Marks]</span>
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-medium md:grid-cols-4 md:text-sm">
@@ -61,7 +62,8 @@ export function QuestionSectionBlock({ section }: QuestionSectionBlockProps) {
                 </>
               ) : (
                 <p className="whitespace-pre-line">
-                  <span className="font-medium">{index + 1}. [{difficultyLabel}] </span>
+                  <span className="font-medium">{index + 1}. </span>
+                  <span className="mr-1.5 inline-flex align-middle"><DifficultyBadge difficulty={question.difficulty} /></span>
                   {question.text} <span className="font-medium">[{question.marks} Marks]</span>
                 </p>
               )}
