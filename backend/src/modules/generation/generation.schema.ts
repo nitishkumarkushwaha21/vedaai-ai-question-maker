@@ -15,6 +15,10 @@ export const generationRequestSchema = z.object({
   totalQuestions: z.number().int().positive(),
   totalMarks: z.number().positive(),
   additionalInstructions: z.string().optional(),
+  specialInstruction: z.object({
+    enabled: z.boolean(),
+    text: z.string().optional(),
+  }).default({ enabled: false }),
   sourceFileAttached: z.boolean(),
   sourceMaterialText: z.string().optional(),
   sourceFileName: z.string().optional(),
@@ -32,6 +36,7 @@ export const generationRequestSchema = z.object({
     sections: z.array(z.string().min(1)).min(1),
     includeDifficulty: z.boolean(),
     includeMarks: z.boolean(),
+    sectionGroupingTag: z.enum(["question-type", "difficulty", "marks"]).optional(),
   }),
 });
 

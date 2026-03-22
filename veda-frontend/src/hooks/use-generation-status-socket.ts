@@ -7,7 +7,7 @@ import type { GenerationJob, GenerationSocketEvent, GenerationSocketPayload } fr
 
 type UseGenerationStatusSocketArgs = {
 	assignmentId: string;
-	initialJob: GenerationJob;
+	initialJob: GenerationJob | null;
 };
 
 const GENERATION_EVENTS: GenerationSocketEvent[] = [
@@ -18,10 +18,15 @@ const GENERATION_EVENTS: GenerationSocketEvent[] = [
 ];
 
 export function useGenerationStatusSocket({ assignmentId, initialJob }: UseGenerationStatusSocketArgs) {
-	const [job, setJob] = useState<GenerationJob>(initialJob);
+	const [job, setJob] = useState<GenerationJob | null>(initialJob);
 	const [socketConnected, setSocketConnected] = useState(false);
 
 	useEffect(() => {
+		if (!assignmentId) {
+			setSocketConnected(false);
+			return;
+		}
+
 		const socket = connectSocket();
 
 		const onConnect = () => setSocketConnected(true);
@@ -41,11 +46,11 @@ export function useGenerationStatusSocket({ assignmentId, initialJob }: UseGener
 				}
 
 				setJob((prev) => ({
-					...prev,
+					...(prev ?? incomingJob),
 					...incomingJob,
 					status: toGenerationStatus(incoming.event),
-					message: incomingJob.message ?? prev.message,
-					error: incomingJob.error ?? prev.error,
+					message: incomingJob.message ?? prev?.message,
+					error: incomingJob.error ?? prev?.error,
 				}));
 			});
 		});

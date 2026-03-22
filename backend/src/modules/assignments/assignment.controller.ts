@@ -197,10 +197,45 @@ export function createAssignmentController() {
     });
   };
 
+  const rename = async (req: Request, res: Response) => {
+    const requestId = String(res.locals.requestId ?? "n/a");
+    const authUserId = String(res.locals.authUserId ?? "demo-user-001");
+    const assignmentId = Array.isArray(req.params.assignmentId) ? req.params.assignmentId[0] : req.params.assignmentId;
+    const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
+
+    if (!assignmentId) {
+      return sendError(res, 400, "INVALID_ASSIGNMENT_ID", "Invalid assignment id");
+    }
+
+    if (!title || title.length > 120) {
+      return sendError(res, 400, "INVALID_ASSIGNMENT_TITLE", "Assignment title must be between 1 and 120 characters");
+    }
+
+    const updated = await AssignmentModel.findOneAndUpdate(
+      { userId: authUserId, assignmentId },
+      { title },
+      { new: true },
+    ).lean();
+
+    if (!updated) {
+      return sendError(res, 404, "ASSIGNMENT_NOT_FOUND", "Assignment not found");
+    }
+
+    logInfo("assignment_rename_success", { assignmentId }, requestId);
+
+    return sendSuccess(res, 200, {
+      assignment: {
+        id: updated.assignmentId,
+        title: updated.title,
+      },
+    });
+  };
+
   return {
     createOrUpdate,
     list,
     getById,
     remove,
+    rename,
   };
 }

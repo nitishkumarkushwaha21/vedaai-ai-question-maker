@@ -7,6 +7,10 @@ export const QUESTION_TYPE_OPTIONS = [
   "Numerical Problems",
 ] as const;
 
+export const SECTION_GROUPING_TAG_OPTIONS = ["question-type", "difficulty", "marks"] as const;
+
+export const sectionGroupingTagSchema = z.enum(SECTION_GROUPING_TAG_OPTIONS);
+
 export const questionTypeRowSchema = z.object({
   type: z.enum(QUESTION_TYPE_OPTIONS),
   numberOfQuestions: z.number().int().min(1, "Must be at least 1"),
@@ -21,6 +25,7 @@ export const createAssignmentSchema = z.object({
     .optional(),
   dueDate: z.string().min(1, "Due date is required"),
   questionRows: z.array(questionTypeRowSchema).min(1, "Add at least one question type"),
+  sectionGroupingTag: sectionGroupingTagSchema.optional(),
   additionalInstructions: z.string().max(500, "Max 500 characters").optional(),
 });
 

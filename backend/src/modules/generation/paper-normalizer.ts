@@ -54,51 +54,74 @@ export function normalizeGeneratedPaper(
   const fallbackMarks = Math.max(1, Math.floor(request.totalMarks / Math.max(1, request.totalQuestions)));
   const requestedSectionTitles = request.expectedOutput.sections;
 
-  const allQuestions = parsed.data.sections.flatMap((section) => section.questions);
-
-  if (allQuestions.length === 0) {
-    throw new Error("PAPER_NORMALIZATION_FAILED: Generated paper has no questions");
-  }
-
-  while (allQuestions.length < request.totalQuestions) {
-    const nextNumber = allQuestions.length + 1;
-    allQuestions.push({
-      text: `Write a concise academic response for question ${nextNumber}.`,
-      marks: fallbackMarks,
-      difficulty: "medium",
-    });
-  }
-
-  const trimmedQuestions = allQuestions.slice(0, request.totalQuestions);
-
-  const sections = requestedSectionTitles.map((title, sectionIndex) => {
-    const sectionQuestions = trimmedQuestions
-      .filter((_, questionIndex) => questionIndex % requestedSectionTitles.length === sectionIndex)
-      .map((question, questionIndex) => ({
-        id: `q-${sectionIndex + 1}-${questionIndex + 1}`,
-        text: question.text.trim(),
-        marks: Number.isFinite(question.marks) ? question.marks : fallbackMarks,
-        difficulty: normalizeDifficulty(question.difficulty),
-      }));
-
-    if (sectionQuestions.length === 0) {
-      sectionQuestions.push({
-        id: `q-${sectionIndex + 1}-1`,
-        text: `Write one answer for ${title}.`,
-        marks: fallbackMarks,
-        difficulty: "medium",
-      });
-    }
+  const baseSections = requestedSectionTitles.map((title, sectionIndex) => {
+    const parsedSection = parsed.data.sections[sectionIndex];
+    const questions = (parsedSection?.questions ?? []).map((question, questionIndex) => ({
+      id: `q-${sectionIndex + 1}-${questionIndex + 1}`,
+      text: question.text.trim(),
+      marks: Number.isFinite(question.marks) ? question.marks : fallbackMarks,
+      difficulty: normalizeDifficulty(question.difficulty),
+    }));
 
     return {
       id: `sec-${sectionIndex + 1}`,
       title,
       instruction: "Attempt all questions. Each question carries marks as indicated.",
-      questions: sectionQuestions,
+      questions,
     };
   });
 
-  const answerKey = trimmedQuestions.map((_, index) => {
+  // If provider returns extra sections, append their questions to the last requested section
+  // rather than rebalancing everything and breaking grouping semantics.
+  if (parsed.data.sections.length > baseSections.length && baseSections.length > 0) {
+    const lastSection = baseSections[baseSections.length - 1];
+    for (let index = baseSections.length; index < parsed.data.sections.length; index += 1) {
+      const extraSection = parsed.data.sections[index];
+      for (const question of extraSection.questions) {
+        lastSection.questions.push({
+          id: `q-${baseSections.length}-${lastSection.questions.length + 1}`,
+          text: question.text.trim(),
+          marks: Number.isFinite(question.marks) ? question.marks : fallbackMarks,
+          difficulty: normalizeDifficulty(question.difficulty),
+        });
+      }
+    }
+  }
+
+  const allQuestions = baseSections.flatMap((section) => section.questions);
+
+  if (allQuestions.length === 0) {
+    throw new Error("PAPER_NORMALIZATION_FAILED: Generated paper has no questions");
+  }
+
+  while (allQuestions.length < request.totalQuestions && baseSections.length > 0) {
+    const nextNumber = allQuestions.length + 1;
+    const lastSection = baseSections[baseSections.length - 1];
+    const fallbackQuestion = {
+      id: `q-${baseSections.length}-${lastSection.questions.length + 1}`,
+      text: `Write a concise academic response for question ${nextNumber}.`,
+      marks: fallbackMarks,
+      difficulty: normalizeDifficulty("medium"),
+    };
+
+    lastSection.questions.push(fallbackQuestion);
+    allQuestions.push(fallbackQuestion);
+  }
+
+  let overflowCount = allQuestions.length - request.totalQuestions;
+  if (overflowCount > 0) {
+    for (let sectionIndex = baseSections.length - 1; sectionIndex >= 0 && overflowCount > 0; sectionIndex -= 1) {
+      const currentQuestions = baseSections[sectionIndex].questions;
+      while (currentQuestions.length > 0 && overflowCount > 0) {
+        currentQuestions.pop();
+        overflowCount -= 1;
+      }
+    }
+  }
+
+  const finalQuestions = baseSections.flatMap((section) => section.questions).slice(0, request.totalQuestions);
+
+  const answerKey = finalQuestions.map((_, index) => {
     return parsed.data.answerKey?.[index] ?? `Q${index + 1}: Key evaluation point.`;
   });
 
@@ -114,7 +137,7 @@ export function normalizeGeneratedPaper(
       rollNumber: true,
       section: true,
     },
-    sections,
+    sections: baseSections,
     answerKey,
   };
 }

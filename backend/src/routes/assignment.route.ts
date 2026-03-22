@@ -8,6 +8,7 @@ export function createAssignmentRouter() {
   router.post("/", controller.createOrUpdate);
   router.get("/", controller.list);
   router.get("/:assignmentId", controller.getById);
+  router.patch("/:assignmentId/rename", controller.rename);
   router.delete("/:assignmentId", controller.remove);
 
   return router;

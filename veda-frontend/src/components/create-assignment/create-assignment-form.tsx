@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ArrowRight, CalendarPlus2, CirclePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus2, CirclePlus, Mic } from "lucide-react";
 import {
   createAssignmentSchema,
   type CreateAssignmentFormValues,
   QUESTION_TYPE_OPTIONS,
+  SECTION_GROUPING_TAG_OPTIONS,
 } from "@/modules/assignments/schema";
 import { FileUploadField } from "@/components/create-assignment/file-upload-field";
 import { QuestionTypeRow } from "@/components/create-assignment/question-type-row";
@@ -35,6 +36,7 @@ type CreateAssignmentFormProps = {
 
 export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormProps) {
   const router = useRouter();
+  const dueDateInputRef = useRef<HTMLInputElement | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -66,11 +68,13 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
           marksPerQuestion: 5,
         },
       ],
+      sectionGroupingTag: undefined,
       additionalInstructions: "",
     },
   });
 
   const { control, register, handleSubmit, formState: { errors, isValid, dirtyFields }, setValue } = form;
+  const dueDateField = register("dueDate");
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -80,6 +84,7 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
   const watchedQuestionRows = useWatch({ control, name: "questionRows" });
   const watchedDueDate = useWatch({ control, name: "dueDate" });
   const watchedAdditionalInstructions = useWatch({ control, name: "additionalInstructions" });
+  const watchedSectionGroupingTag = useWatch({ control, name: "sectionGroupingTag" });
   const watchedFile = useWatch({ control, name: "file" });
   const questionRows = useMemo(() => watchedQuestionRows ?? [], [watchedQuestionRows]);
 
@@ -184,6 +189,22 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
     await saveDraft(values, true);
   });
 
+  const openDueDatePicker = () => {
+    const input = dueDateInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+    if (typeof pickerInput.showPicker === "function") {
+      pickerInput.showPicker();
+      return;
+    }
+
+    input.focus();
+    input.click();
+  };
+
   return (
     <form onSubmit={onSaveAndContinue} className="space-y-6">
       <div className="mx-auto w-full max-w-[810px] space-y-6 rounded-[32px] bg-[#f5f5f7] p-4 md:w-[810px] md:p-8">
@@ -204,9 +225,22 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
               type="date"
               className="h-9 w-full rounded-[10px] border border-[#e2e4e8] bg-white px-3 pr-9 text-[11px] text-[#2a2d33] [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-0"
               placeholder="Choose a chapter"
-              {...register("dueDate")}
+              name={dueDateField.name}
+              onBlur={dueDateField.onBlur}
+              onChange={dueDateField.onChange}
+              ref={(node) => {
+                dueDateField.ref(node);
+                dueDateInputRef.current = node;
+              }}
             />
-            <CalendarPlus2 className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8f949d]" />
+            <button
+              type="button"
+              onClick={openDueDatePicker}
+              aria-label="Open due date picker"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#8f949d] hover:bg-slate-100"
+            >
+              <CalendarPlus2 className="h-3.5 w-3.5" />
+            </button>
           </div>
           {errors.dueDate ? <p className="text-[10px] text-rose-600">{errors.dueDate.message}</p> : null}
         </div>
@@ -296,14 +330,54 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
           <p>Total Marks: {totals.totalMarks}</p>
         </div>
 
+        <div className="space-y-2">
+          <label className="text-[11px] font-semibold text-[#2f3238]">Sectioning Tag (Optional)</label>
+          <div className="flex flex-wrap gap-2">
+            {SECTION_GROUPING_TAG_OPTIONS.map((tag) => {
+              const active = watchedSectionGroupingTag === tag;
+              const label = tag === "question-type" ? "By Question Type" : tag === "difficulty" ? "By Difficulty" : "By Marks";
+
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    setValue("sectionGroupingTag", active ? undefined : tag, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    });
+                  }}
+                  className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${
+                    active
+                      ? "border-[#181818] bg-[#181818] text-white"
+                      : "border-[#d7dbe2] bg-white text-[#4d535d] hover:bg-[#f4f5f7]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-[#2f3238]">Additional Information (For better output)</label>
-          <textarea
-            rows={3}
-            placeholder="e.g Generate a question paper for 3 hour exam duration..."
-            className="w-full rounded-[10px] border border-[#e2e4e8] bg-white px-3 py-2 text-[11px] text-[#2a2d33]"
-            {...register("additionalInstructions")}
-          />
+          <div className="relative h-[102px] w-full rounded-[16px] border-[1.25px] border-dashed border-[#d5d9df] p-4 md:w-[746px]">
+            <textarea
+              rows={2}
+              placeholder="e.g Generate a question paper for 3 hour exam duration..."
+              className="h-full w-full resize-none bg-transparent pr-10 text-[11px] text-[#2a2d33] outline-none placeholder:text-[#9ca3af]"
+              {...register("additionalInstructions")}
+            />
+            <button
+              type="button"
+              aria-label="Voice prompt input"
+              className="absolute bottom-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#6b7280] shadow-[0_2px_8px_rgba(15,23,42,0.2)]"
+            >
+              <Mic className="h-3 w-3" />
+            </button>
+          </div>
           {errors.additionalInstructions ? <p className="text-[10px] text-rose-600">{errors.additionalInstructions.message}</p> : null}
         </div>
       </div>

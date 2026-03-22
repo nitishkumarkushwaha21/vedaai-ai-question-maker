@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { AIToolkitLiveView } from "@/components/output/ai-toolkit-live-view";
+import { GenerationPaperSkeleton } from "@/components/output/generation-paper-skeleton";
 import { useGenerationStatusSocket } from "@/hooks/use-generation-status-socket";
 import { ENV } from "@/lib/env";
 import { useAssignmentDraftStore } from "@/store/assignment-draft-store";
@@ -46,15 +47,6 @@ type RegenerateGenerationResponseData = {
 	sourceJobId?: string;
 };
 
-const MOCK_JOB: GenerationJob = {
-	jobId: "job-001",
-	assignmentId: "a1",
-	status: "processing",
-	progress: 65,
-	message: "Generating section-level questions and marks split...",
-	startedAt: "2026-03-18T10:00:00.000Z",
-};
-
 export default function AIToolkitPage() {
 	const [isStarting, setIsStarting] = useState(false);
 	const [isRegenerating, setIsRegenerating] = useState(false);
@@ -67,7 +59,6 @@ export default function AIToolkitPage() {
 
 	const generationSubmitDraft = useGenerationSubmitStore((state) => state.generationSubmitDraft);
 	const updateGenerationSubmitStatus = useGenerationSubmitStore((state) => state.updateGenerationSubmitStatus);
-	const resetGenerationSubmitDraft = useGenerationSubmitStore((state) => state.resetGenerationSubmitDraft);
 	const assignmentDraft = useAssignmentDraftStore((state) => state.assignmentDraft);
   const session = useAuthStore((state) => state.session);
   const profile = useAuthStore((state) => state.profile);
@@ -76,23 +67,25 @@ export default function AIToolkitPage() {
 	const resolvedUserId = clerkUserId ?? session.userId ?? "demo-user-001";
 
 	const draftRequest = generationSubmitDraft?.request;
-	const assignmentId = draftRequest?.assignmentId ?? MOCK_JOB.assignmentId;
+	const assignmentId = draftRequest?.assignmentId ?? activeJob?.assignmentId ?? "";
 
-	const initialJob: GenerationJob = useMemo(() => {
+	const initialJob: GenerationJob | null = useMemo(() => {
 		if (activeJob) {
 			return activeJob;
 		}
 
 		if (draftRequest) {
 			return {
-				...MOCK_JOB,
+				jobId: "",
 				assignmentId,
 				status: generationSubmitDraft?.clientStatus ?? "queued",
+				progress: 0,
 				message: "Draft loaded. Ready to start generation.",
+				startedAt: new Date().toISOString(),
 			};
 		}
 
-		return MOCK_JOB;
+		return null;
 	}, [activeJob, assignmentId, draftRequest, generationSubmitDraft?.clientStatus]);
 
 	const { job: socketJob, socketConnected } = useGenerationStatusSocket({
@@ -154,7 +147,7 @@ export default function AIToolkitPage() {
 	}, [getToken, resolvedUserId, updateGenerationSubmitStatus]);
 
 	useEffect(() => {
-		if (!socketJob) {
+		if (!socketJob || !socketJob.jobId) {
 			return;
 		}
 
@@ -171,12 +164,32 @@ export default function AIToolkitPage() {
 		}
 	}, [fetchGenerationResult, socketJob, updateGenerationSubmitStatus]);
 
+	useEffect(() => {
+		const candidateJobId = activeJob?.jobId || latestFetchedResultJobIdRef.current;
+		const status = socketJob?.status ?? activeJob?.status;
+
+		if (!candidateJobId || (status !== "queued" && status !== "processing")) {
+			return;
+		}
+
+		const intervalId = window.setInterval(() => {
+			void fetchGenerationResult(candidateJobId).catch(() => {
+				// Keep polling quietly until backend marks completion or explicit failure appears.
+			});
+		}, 3500);
+
+		return () => {
+			window.clearInterval(intervalId);
+		};
+	}, [activeJob?.jobId, activeJob?.status, fetchGenerationResult, socketJob?.status]);
+
 	const startGenerationFromBackend = useCallback(async () => {
 		if (!draftRequest) {
 			return;
 		}
 
 		setIsStarting(true);
+		setActivePaper(null);
 		setStartError(null);
 		setResultInfo(null);
 
@@ -254,18 +267,22 @@ export default function AIToolkitPage() {
 		void startGenerationFromBackend();
 	}, [activeJob, draftRequest, startGenerationFromBackend]);
 
+	const regenerateSourceJobId = socketJob?.jobId || activeJob?.jobId || latestFetchedResultJobIdRef.current;
+
 	const regenerateFromBackend = async () => {
-		if (!activeJob) {
+		if (!regenerateSourceJobId) {
+			setStartError("Generate once before regenerating.");
 			return;
 		}
 
 		setIsRegenerating(true);
+		setActivePaper(null);
 		setStartError(null);
 		setResultInfo("Regeneration started. Waiting for socket completion...");
 
 		try {
 			const token = await getToken();
-			const response = await fetch(`${ENV.API_URL}/generation/${activeJob.jobId}/regenerate`, {
+			const response = await fetch(`${ENV.API_URL}/generation/${regenerateSourceJobId}/regenerate`, {
 				method: "POST",
 				headers: {
 					...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -300,88 +317,64 @@ export default function AIToolkitPage() {
 		}
 	};
 
+	const currentStatus = socketJob?.status ?? activeJob?.status ?? generationSubmitDraft?.clientStatus;
+	const showPaperSkeleton =
+		isStarting ||
+		isRegenerating ||
+		currentStatus === "queued" ||
+		currentStatus === "processing";
+
 	return (
 		<div className="space-y-4">
 			{draftRequest ? (
-				<section className="rounded-xl border border-slate-200 bg-white p-4">
-					<p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Draft Summary</p>
-					<div className="mt-2 grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-3">
-						<p>Due Date: {draftRequest.dueDate || "N/A"}</p>
-						<p>Total Questions: {draftRequest.totalQuestions}</p>
-						<p>Total Marks: {draftRequest.totalMarks}</p>
+				<section className="rounded-xl border border-slate-200 bg-white p-3">
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<div>
+							<p className="text-sm font-semibold text-slate-900 underline">Draft summary</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<button
+								type="button"
+								onClick={startGenerationFromBackend}
+								disabled={!draftRequest || isStarting || isRegenerating}
+								className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{isStarting ? "Starting..." : "Start"}
+							</button>
+
+							<button
+								type="button"
+								onClick={regenerateFromBackend}
+								disabled={!regenerateSourceJobId || isRegenerating || isStarting}
+								className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{isRegenerating ? "Regenerating..." : "Regenerate"}
+							</button>
+						</div>
 					</div>
+
+					<div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-700 md:grid-cols-4">
+						<p>Due: {draftRequest.dueDate || "N/A"}</p>
+						<p>Questions: {draftRequest.totalQuestions}</p>
+						<p>Marks: {draftRequest.totalMarks}</p>
+						<p>Status: {generationSubmitDraft?.clientStatus ?? "queued"}</p>
+					</div>
+
+					{startError ? <p className="mt-2 text-xs text-rose-600">{startError}</p> : null}
+					{resultInfo ? <p className="mt-1 text-xs text-slate-600">{resultInfo}</p> : null}
 				</section>
 			) : null}
 
-			<section className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
-				<div className="flex items-center justify-between gap-3">
-					<p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Temporary Request Preview</p>
-					<div className="flex items-center gap-2">
-						<button
-							type="button"
-							onClick={startGenerationFromBackend}
-							disabled={!draftRequest || isStarting || isRegenerating}
-							className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{isStarting ? "Starting..." : "Start Generation"}
-						</button>
+			{!draftRequest ? (
+				<section className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+					No draft available. Create an assignment first, then return here to start generation.
+				</section>
+			) : null}
 
-						<button
-							type="button"
-							onClick={regenerateFromBackend}
-							disabled={!activeJob || isRegenerating || isStarting}
-							className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{isRegenerating ? "Regenerating..." : "Regenerate"}
-						</button>
-
-						{generationSubmitDraft ? (
-							<button
-								type="button"
-								onClick={resetGenerationSubmitDraft}
-								className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700"
-							>
-								Clear Draft
-							</button>
-						) : null}
-					</div>
-				</div>
-
-				{generationSubmitDraft ? (
-					<>
-						<p className="mt-1 text-xs text-slate-600">Client status: {generationSubmitDraft.clientStatus}</p>
-						<pre className="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-100">
-							{JSON.stringify(generationSubmitDraft.request, null, 2)}
-						</pre>
-					</>
-				) : (
-					<p className="mt-1 text-sm text-slate-600">No request drafted yet. Create an assignment to preview the payload.</p>
-				)}
-
-				{!draftRequest ? (
-					<p className="mt-2 text-xs text-slate-500">Create an assignment first, then return here to start generation.</p>
-				) : null}
-
-				{startError ? <p className="mt-2 text-xs text-rose-600">{startError}</p> : null}
-				{resultInfo ? <p className="mt-2 text-xs text-slate-600">{resultInfo}</p> : null}
-
-				{activeJob ? (
-					<button
-						type="button"
-						onClick={() => {
-							void fetchGenerationResult(activeJob.jobId).catch((error: unknown) => {
-								setStartError(error instanceof Error ? error.message : "Failed to fetch generation result");
-							});
-						}}
-						className="mt-2 rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700"
-					>
-						Retry Result Fetch
-					</button>
-				) : null}
-			</section>
-
-			{activePaper ? (
-				<AIToolkitLiveView job={socketJob ?? initialJob} socketConnected={socketConnected} paper={activePaper} />
+			{showPaperSkeleton ? (
+				<GenerationPaperSkeleton />
+			) : activePaper && activeJob ? (
+				<AIToolkitLiveView job={socketJob ?? activeJob} socketConnected={socketConnected} paper={activePaper} />
 			) : (
 				<section className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
 					No generated paper yet. Start generation and wait for completion.

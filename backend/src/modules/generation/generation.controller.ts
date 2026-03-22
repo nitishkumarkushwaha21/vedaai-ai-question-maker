@@ -176,7 +176,21 @@ export function createGenerationController(io: Server) {
       return sendError(res, 400, "INVALID_STORED_REQUEST", "Stored request is invalid for regeneration");
     }
 
-    const job = startGeneration(io, parsed.data as GenerationRequestPayload);
+    const regenerateInstruction = "Improve the paper quality. Make questions more precise, clearer, and academically stronger while preserving requested format and marks.";
+    const mergedSpecialInstructionText = parsed.data.specialInstruction?.text
+      ? `${parsed.data.specialInstruction.text}\n${regenerateInstruction}`
+      : regenerateInstruction;
+
+    const regenerationRequest: GenerationRequestPayload = {
+      ...(parsed.data as GenerationRequestPayload),
+      userId: authUserId,
+      specialInstruction: {
+        enabled: true,
+        text: mergedSpecialInstructionText,
+      },
+    };
+
+    const job = startGeneration(io, regenerationRequest);
     logInfo("generation_regenerate_accepted", { sourceJobId: jobId, newJobId: job.jobId }, requestId);
 
     return sendSuccess(res, 202, { job, sourceJobId: jobId });

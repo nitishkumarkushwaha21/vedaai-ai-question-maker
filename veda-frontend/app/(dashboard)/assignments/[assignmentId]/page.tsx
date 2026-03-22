@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2, PencilLine } from "lucide-react";
 import { ENV } from "@/lib/env";
 import { ROUTES } from "@/lib/routes";
 import type { AssignmentDetail, AssignmentGenerationSnapshot } from "@/types/assignment";
@@ -37,6 +37,10 @@ export default function AssignmentDetailPage() {
   const [data, setData] = useState<AssignmentDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [renameMode, setRenameMode] = useState(false);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!assignmentId) {
@@ -65,6 +69,7 @@ export default function AssignmentDetailPage() {
 
         if (!cancelled) {
           setData(payload.data);
+          setRenameTitle(payload.data.assignment.title);
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -107,6 +112,53 @@ export default function AssignmentDetailPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleRename = async () => {
+    if (!data || !assignmentId) {
+      return;
+    }
+
+    const nextTitle = renameTitle.trim();
+    if (!nextTitle) {
+      setRenameError("Title is required");
+      return;
+    }
+
+    if (nextTitle.length > 120) {
+      setRenameError("Title must be at most 120 characters");
+      return;
+    }
+
+    setRenameError(null);
+    setRenaming(true);
+
+    try {
+      const token = await getToken();
+      const response = await fetch(`${ENV.API_URL}/assignments/${assignmentId}/rename`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "x-user-id": userId ?? "demo-user-001",
+        },
+        body: JSON.stringify({ title: nextTitle }),
+      });
+
+      const payload = (await response.json()) as { ok: boolean; data?: { assignment?: { title?: string } }; error?: { message?: string } };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error?.message ?? "Failed to rename assignment");
+      }
+
+      const savedTitle = payload.data?.assignment?.title ?? nextTitle;
+      setData((prev) => (prev ? { ...prev, assignment: { ...prev.assignment, title: savedTitle } } : prev));
+      setRenameTitle(savedTitle);
+      setRenameMode(false);
+    } catch (renameFailure) {
+      setRenameError(renameFailure instanceof Error ? renameFailure.message : "Failed to rename assignment");
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   return (
     <section className="space-y-6 pb-20 md:pb-4">
       <Link href={ROUTES.ASSIGNMENTS} className="text-sm font-medium text-slate-600 hover:text-slate-900">
@@ -125,7 +177,60 @@ export default function AssignmentDetailPage() {
       {!loading && !error && data ? (
         <>
           <article className="rounded-2xl bg-white p-5 shadow-sm">
-            <h1 className="text-2xl font-semibold text-slate-900">{data.assignment.title}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                {renameMode ? (
+                  <>
+                    <input
+                      value={renameTitle}
+                      onChange={(event) => setRenameTitle(event.target.value)}
+                      className="w-full border-b-2 border-[#181818] bg-transparent pb-1 text-2xl font-semibold text-slate-900 outline-none"
+                    />
+                    {renameError ? <p className="mt-1 text-xs text-rose-600">{renameError}</p> : null}
+                  </>
+                ) : (
+                  <h1 className="truncate text-2xl font-semibold text-slate-900">{data.assignment.title}</h1>
+                )}
+              </div>
+
+              {renameMode ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenameMode(false);
+                      setRenameError(null);
+                      setRenameTitle(data.assignment.title);
+                    }}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRename}
+                    disabled={renaming}
+                    className="rounded-full bg-[#181818] px-4 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                  >
+                    {renaming ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenameMode(true);
+                    setRenameError(null);
+                    setRenameTitle(data.assignment.title);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-[#181818] px-3 py-1.5 text-xs font-medium text-white"
+                >
+                  <PencilLine className="h-3.5 w-3.5" />
+                  Rename
+                </button>
+              )}
+            </div>
+
             <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-slate-600 md:grid-cols-2">
               <p>
                 Assigned on: <span className="font-semibold text-slate-900">{data.assignment.assignedOn}</span>
@@ -143,27 +248,6 @@ export default function AssignmentDetailPage() {
                 Status: <span className="font-semibold text-slate-900">{prettyStatus}</span>
               </p>
             </div>
-
-            {data.assignment.additionalInstructions ? (
-              <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                <p className="font-medium text-slate-900">Additional instructions</p>
-                <p className="mt-1 whitespace-pre-line">{data.assignment.additionalInstructions}</p>
-              </div>
-            ) : null}
-
-            {data.latestGeneration ? (
-              <div className="mt-4 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
-                <p>
-                  Latest generation: <span className="font-semibold text-slate-900">{data.latestGeneration.status}</span>
-                </p>
-                <p>
-                  Progress: <span className="font-semibold text-slate-900">{data.latestGeneration.progress}%</span>
-                </p>
-                <p>
-                  Message: <span className="font-semibold text-slate-900">{data.latestGeneration.message}</span>
-                </p>
-              </div>
-            ) : null}
           </article>
 
           {data.paper ? (

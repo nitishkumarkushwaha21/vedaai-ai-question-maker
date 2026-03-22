@@ -15,6 +15,10 @@ export type GenerationRequestPayload = {
 	totalQuestions: number;
 	totalMarks: number;
 	additionalInstructions?: string;
+	specialInstruction: {
+		enabled: boolean;
+		text?: string;
+	};
 	sourceFileAttached: boolean;
 	profile?: {
 		userName?: string;
@@ -30,6 +34,7 @@ export type GenerationRequestPayload = {
 		sections: string[];
 		includeDifficulty: boolean;
 		includeMarks: boolean;
+		sectionGroupingTag?: "question-type" | "difficulty" | "marks";
 	};
 };
 

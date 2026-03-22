@@ -50,7 +50,21 @@ function buildQuestionText(questionType: string, sequenceNo: number): string {
   const normalized = questionType.trim().toLowerCase();
 
   if (normalized.includes("mcq") || normalized.includes("multiple")) {
-    return `Write the correct option for question ${sequenceNo} based on the chapter concept.`;
+    return [
+      `Q${sequenceNo}. What is the value of 2 * 3 + 4 * 3 - 2?`,
+      "A) 10",
+      "B) 16",
+      "C) 4",
+      "D) 61",
+    ].join("\n");
+  }
+
+  if (normalized.includes("diagram") || normalized.includes("graph")) {
+    return `Draw and label a suitable diagram for concept ${sequenceNo}, then explain it in 3 to 4 points.`;
+  }
+
+  if (normalized.includes("numerical") || normalized.includes("problem")) {
+    return `Solve numerical problem ${sequenceNo} using proper steps, formula substitution, and final unit.`;
   }
 
   if (normalized.includes("long")) {
@@ -64,9 +78,120 @@ function buildQuestionText(questionType: string, sequenceNo: number): string {
   return `Define and explain concept ${sequenceNo} in clear academic language.`;
 }
 
+function buildQuestionTypePrompt(type: string): string {
+  const normalized = type.trim().toLowerCase();
+
+  if (normalized.includes("mcq") || normalized.includes("multiple")) {
+    return [
+      `Type: ${type}`,
+      "- Write objective MCQs only.",
+      "- EVERY question must include exactly four options labeled A), B), C), D).",
+      "- Keep one unambiguous correct option.",
+      "- Do not output MCQ as short-answer or statement-only format.",
+      "- Required text format example:",
+      "  Q1. What is the result of 2*3 + 4*3 - 2?",
+      "  A) 10",
+      "  B) 16",
+      "  C) 4",
+      "  D) 61",
+      "- In answerKey, include the correct option letter and short reason, for example: 'Q1: B (2*3 + 4*3 - 2 = 16)'.",
+    ].join("\n");
+  }
+
+  if (normalized.includes("short")) {
+    return [
+      `Type: ${type}`,
+      "- Write short-answer questions only.",
+      "- Questions should require 2 to 4 lines in a student response.",
+      "- Focus on definition, reasoning, and small conceptual application.",
+      "- Do not include options A/B/C/D.",
+    ].join("\n");
+  }
+
+  if (normalized.includes("diagram") || normalized.includes("graph")) {
+    return [
+      `Type: ${type}`,
+      "- Ask diagram or graph-based questions only.",
+      "- Prompt students to draw, label, or interpret a diagram/graph.",
+      "- Clearly mention what labels, axes, trends, or parts must be shown.",
+      "- Keep the question precise and syllabus-relevant.",
+    ].join("\n");
+  }
+
+  if (normalized.includes("numerical") || normalized.includes("problem")) {
+    return [
+      `Type: ${type}`,
+      "- Ask numerical problem-solving questions only.",
+      "- Include concrete values/data so the problem is solvable.",
+      "- Require method steps and final answer with correct unit.",
+      "- Avoid purely theoretical wording.",
+    ].join("\n");
+  }
+
+  return [
+    `Type: ${type}`,
+    "- Generate syllabus-aligned descriptive questions.",
+    "- Keep wording clear and grade-appropriate.",
+  ].join("\n");
+}
+
+function buildGroupingBuckets(request: GenerationRequestPayload) {
+  const tag = request.expectedOutput.sectionGroupingTag;
+
+  if (tag === "question-type") {
+    return Array.from(new Set(request.questionTypes.map((item) => item.type.trim().toLowerCase())));
+  }
+
+  if (tag === "difficulty") {
+    return ["easy", "medium", "hard"];
+  }
+
+  if (tag === "marks") {
+    return Array.from(new Set(request.questionTypes.map((item) => String(item.marksPerQuestion)))).sort(
+      (a, b) => Number(a) - Number(b),
+    );
+  }
+
+  return [];
+}
+
+function sectionIndexForTag(
+  groupingTag: GenerationRequestPayload["expectedOutput"]["sectionGroupingTag"],
+  groupingBuckets: string[],
+  sectionDrafts: GeneratedSectionDraft[],
+  questionType: GenerationRequestPayload["questionTypes"][number],
+  globalQuestionIndex: number,
+) {
+  if (!sectionDrafts.length) {
+    return 0;
+  }
+
+  if (groupingTag === "question-type") {
+    const normalizedType = questionType.type.trim().toLowerCase();
+    const matchIndex = groupingBuckets.findIndex((bucket) => bucket === normalizedType);
+    return matchIndex >= 0 ? matchIndex : globalQuestionIndex % sectionDrafts.length;
+  }
+
+  if (groupingTag === "difficulty") {
+    const questionDifficulty = difficultyByIndex(globalQuestionIndex);
+    const matchIndex = groupingBuckets.findIndex((bucket) => bucket === questionDifficulty);
+    return matchIndex >= 0 ? matchIndex : globalQuestionIndex % sectionDrafts.length;
+  }
+
+  if (groupingTag === "marks") {
+    const marksKey = String(questionType.marksPerQuestion);
+    const matchIndex = groupingBuckets.findIndex((bucket) => bucket === marksKey);
+    return matchIndex >= 0 ? matchIndex : globalQuestionIndex % sectionDrafts.length;
+  }
+
+  return globalQuestionIndex % sectionDrafts.length;
+}
+
 export class MockGenerationAiAdapter implements GenerationAiAdapter {
   async generatePaperDraft(request: GenerationRequestPayload): Promise<unknown> {
     const requestedSections = request.expectedOutput.sections;
+    const groupingTag = request.expectedOutput.sectionGroupingTag;
+    const groupingBuckets = buildGroupingBuckets(request);
     const sectionDrafts: GeneratedSectionDraft[] = requestedSections.map((sectionTitle) => ({
       title: sectionTitle,
       instruction: "Attempt all questions. Each question carries the marks shown.",
@@ -77,7 +202,7 @@ export class MockGenerationAiAdapter implements GenerationAiAdapter {
 
     for (const questionType of request.questionTypes) {
       for (let idx = 0; idx < questionType.numberOfQuestions; idx += 1) {
-        const sectionIndex = globalQuestionIndex % Math.max(1, sectionDrafts.length);
+        const sectionIndex = sectionIndexForTag(groupingTag, groupingBuckets, sectionDrafts, questionType, globalQuestionIndex);
 
         sectionDrafts[sectionIndex]?.questions.push({
           text: buildQuestionText(questionType.type, globalQuestionIndex + 1),
@@ -139,10 +264,18 @@ function buildPrompt(request: GenerationRequestPayload) {
       return `${index + 1}. type=${item.type}; count=${item.numberOfQuestions}; marksPerQuestion=${item.marksPerQuestion}; totalMarks=${item.totalMarks}`;
     })
     .join("\n");
+  const questionTypePrompts = request.questionTypes
+    .map((item, index) => {
+      return `${index + 1}.\n${buildQuestionTypePrompt(item.type)}`;
+    })
+    .join("\n\n");
 
   const sectionList = request.expectedOutput.sections.join(", ");
   const includeDifficulty = request.expectedOutput.includeDifficulty ? "true" : "false";
   const includeMarks = request.expectedOutput.includeMarks ? "true" : "false";
+  const sectionGroupingTag = request.expectedOutput.sectionGroupingTag ?? "none";
+  const specialInstructionEnabled = request.specialInstruction.enabled ? "true" : "false";
+  const specialInstructionText = request.specialInstruction.text?.trim() || "none";
   const sourceExcerpt = request.sourceMaterialText
     ? request.sourceMaterialText.slice(0, 8000)
     : "";
@@ -183,9 +316,12 @@ function buildPrompt(request: GenerationRequestPayload) {
     `- totalQuestions: ${request.totalQuestions}`,
     `- totalMarks: ${request.totalMarks}`,
     `- requiredSections: ${sectionList}`,
+    `- sectionGroupingTag: ${sectionGroupingTag}`,
     `- includeDifficulty: ${includeDifficulty}`,
     `- includeMarks: ${includeMarks}`,
     `- additionalInstructions: ${request.additionalInstructions ?? "none"}`,
+    `- specialInstructionEnabled: ${specialInstructionEnabled}`,
+    `- specialInstructionText: ${specialInstructionText}`,
     `- sourceFileAttached: ${request.sourceFileAttached ? "true" : "false"}`,
     `- sourceFileName: ${request.sourceFileName ?? "none"}`,
     `- sourceContext: ${fileContext}`,
@@ -193,11 +329,15 @@ function buildPrompt(request: GenerationRequestPayload) {
     "- Ensure generated questions are clear and syllabus-aligned.",
     "- Ensure marks and difficulty are realistic.",
     "- Keep answerKey length aligned to totalQuestions.",
+    "- Critical MCQ rule: if question type is MCQ/Multiple Choice Questions, each question text must include A), B), C), D) options.",
     sourceExcerpt ? "- Primary source text (use this as core context):" : "",
     sourceExcerpt,
     "",
     "Question type requirements:",
     questionTypeLines,
+    "",
+    "Detailed prompt per question type:",
+    questionTypePrompts,
   ].join("\n");
 }
 
