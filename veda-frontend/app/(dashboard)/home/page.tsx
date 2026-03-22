@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function DashboardHomePage() {
   const [assignmentImageLoaded, setAssignmentImageLoaded] = useState(false);
@@ -18,9 +19,11 @@ export default function DashboardHomePage() {
 
         <figure className="journey-image-shell journey-image-frame w-full max-w-[1060px]">
           {!assignmentImageLoaded ? <div className="journey-image-skeleton" aria-hidden="true" /> : null}
-          <img
+          <Image
             src="/image%203.png"
             alt="How VedaAI works - AI-assisted assignment creation journey"
+            fill
+            sizes="(max-width: 1060px) 100vw, 1060px"
             className={`journey-image-crop journey-image-pulse journey-image-fade ${assignmentImageLoaded ? "is-loaded" : ""}`}
             onLoad={() => setAssignmentImageLoaded(true)}
             onError={() => setAssignmentImageLoaded(true)}
@@ -38,9 +41,11 @@ export default function DashboardHomePage() {
 
         <figure className="journey-image-shell journey-image-frame w-full max-w-[1060px]">
           {!collaborationImageLoaded ? <div className="journey-image-skeleton" aria-hidden="true" /> : null}
-          <img
+          <Image
             src="/image%204.png"
             alt="How VedaAI works - teacher collaboration journey"
+            fill
+            sizes="(max-width: 1060px) 100vw, 1060px"
             className={`journey-image-crop journey-image-pulse journey-image-fade ${collaborationImageLoaded ? "is-loaded" : ""}`}
             onLoad={() => setCollaborationImageLoaded(true)}
             onError={() => setCollaborationImageLoaded(true)}

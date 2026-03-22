@@ -120,6 +120,11 @@ export function DesktopSidebarNav() {
       </nav>
 
       <div className="mt-auto">
+        <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-[11px] font-medium text-slate-500">School</p>
+          <p className="truncate text-sm font-semibold text-slate-800">{profile.schoolName || "Delhi Public School"}</p>
+        </div>
+
         <div ref={menuRef} className="relative mb-4">
           <button
             type="button"

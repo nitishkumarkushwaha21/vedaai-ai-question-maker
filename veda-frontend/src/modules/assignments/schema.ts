@@ -20,7 +20,10 @@ export const questionTypeRowSchema = z.object({
 export const createAssignmentSchema = z.object({
   file: z
     .instanceof(File)
-    .refine((file) => file.type === "application/pdf", "Only PDF files are allowed")
+    .refine(
+      (file) => file.type === "application/pdf" || file.type === "text/plain",
+      "Only PDF or TXT files are allowed",
+    )
     .refine((file) => file.size <= 10 * 1024 * 1024, "File size must be 10MB or less")
     .optional(),
   dueDate: z.string().min(1, "Due date is required"),

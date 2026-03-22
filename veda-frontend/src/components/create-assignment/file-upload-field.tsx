@@ -19,13 +19,13 @@ export function FileUploadField({ control }: FileUploadFieldProps) {
             <UploadCloud className="h-4.5 w-4.5" />
           </span>
           <p className="mt-1 text-[11px] font-medium text-[#2a2d33]">Choose a file or drag & drop it here</p>
-          <p className="mt-1 text-[10px] text-[#a3a6ad]">JPEG, PNG, upto 10MB</p>
+          <p className="mt-1 text-[10px] text-[#a3a6ad]">PDF or TXT, up to 10MB</p>
           <label className="mt-3 inline-flex cursor-pointer rounded-full bg-[#f1f2f4] px-4 py-1.5 text-[10px] font-medium text-[#3e434b]">
             Browse Files
             <input
               type="file"
               className="hidden"
-              accept="application/pdf"
+              accept="application/pdf,text/plain"
               onChange={(event) => {
                 const selected = event.target.files?.[0];
                 field.onChange(selected);
@@ -33,7 +33,7 @@ export function FileUploadField({ control }: FileUploadFieldProps) {
             />
           </label>
 
-          <p className="mt-3 text-[10px] text-[#999da5]">Upload images of your preferred document/image</p>
+          <p className="mt-3 text-[10px] text-[#999da5]">Upload a source document to guide question generation.</p>
 
           {field.value ? (
             <div className="mt-2 space-y-1 text-left">

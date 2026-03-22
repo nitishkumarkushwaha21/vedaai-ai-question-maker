@@ -23,7 +23,6 @@ export function useGenerationStatusSocket({ assignmentId, initialJob }: UseGener
 
 	useEffect(() => {
 		if (!assignmentId) {
-			setSocketConnected(false);
 			return;
 		}
 

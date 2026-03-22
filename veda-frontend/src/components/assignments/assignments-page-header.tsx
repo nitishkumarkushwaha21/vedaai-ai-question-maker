@@ -2,7 +2,7 @@ type AssignmentsPageHeaderProps = {
   totalCount: number;
 };
 
-import { ArrowLeft, MoreVertical } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function AssignmentsPageHeader({ totalCount }: AssignmentsPageHeaderProps) {

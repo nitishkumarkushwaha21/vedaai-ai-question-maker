@@ -358,6 +358,7 @@ export default function AIToolkitPage() {
 					</div>
 
 					{startError ? <p className="mt-2 text-xs text-rose-600">{startError}</p> : null}
+					{resultInfo ? <p className="mt-1 text-xs text-slate-600">{resultInfo}</p> : null}
 
 					<div className="mt-3 border-t border-slate-200 pt-2">
 						<div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -385,11 +386,11 @@ export default function AIToolkitPage() {
 					paper={activePaper}
 					userName={profile?.userName}
 				/>
-			) : (
+			) : draftRequest ? (
 				<section className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
 					No generated paper yet. Start generation and wait for completion.
 				</section>
-			)}
+			) : null}
 		</div>
 	);
 }

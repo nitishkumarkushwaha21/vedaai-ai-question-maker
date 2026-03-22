@@ -1,315 +1,228 @@
 # Veda AI Assessment Creator
 
-A full-stack AI Assessment Creator built from the assignment brief in [vedaai_assessment_.md](vedaai_assessment_.md).
+Production-ready full-stack implementation of the assessment brief in [vedaai_assessment_.md](vedaai_assessment_.md).
 
-This project enables a teacher workflow end to end:
-- Create an assignment with due date, question mix, marks, and optional instructions/file.
-- Queue AI generation in the backend.
-- Track generation in real time through WebSocket events.
-- Persist assignment and generated paper in MongoDB.
-- View generated output in a clean, mobile-responsive UI.
+## What this project does
 
-## 1. Assessment Coverage
+Teacher workflow end-to-end:
+- Create assignments with due date, question mix, marks, optional instructions, and optional source file upload (PDF or TXT).
+- Start AI generation via backend queue jobs.
+- Track generation in real time using Socket.IO events.
+- Persist assignments and generated papers in MongoDB.
+- View generated paper in clean desktop/mobile layouts.
+- Regenerate paper and download output (JSON export + print-to-PDF view).
 
-### Implemented core requirements
-- Assignment Creation UI with validation.
-- Zustand state for assignment draft and generation submit data.
-- Structured generation request payload before calling AI.
-- Backend with Node.js + Express + TypeScript.
-- MongoDB persistence for assignments and generation records.
-- Redis + BullMQ queue and worker processing.
-- WebSocket subscription model for real-time status updates.
-- Output page with sectioned question paper, marks, and difficulty.
+## Tech stack
 
-### Implemented bonus items
-- Regenerate endpoint on backend.
-- Difficulty badges in output UI.
-- Download capability currently provided as JSON export from assignment detail page.
-
-### Notes
-- Bonus target says download as PDF. Current implementation exports generated paper JSON. PDF export can be added as an enhancement.
-
-## 2. Tech Stack
-
-### Frontend
-- Next.js (App Router)
-- TypeScript
+Frontend:
+- Next.js (App Router) + TypeScript
 - Zustand
 - React Hook Form + Zod
-- Socket.IO Client
 - Tailwind CSS
-- Clerk (authentication)
+- Socket.IO Client
+- Clerk auth
 
-### Backend
+Backend:
 - Node.js + Express + TypeScript
 - MongoDB + Mongoose
 - Redis + BullMQ
 - Socket.IO
 - Zod
-- Clerk backend auth verification
 
-### AI provider
-- OpenRouter (configurable model via environment variables)
+AI layer:
+- Adapter architecture in [backend/src/modules/generation/ai-adapter.ts](backend/src/modules/generation/ai-adapter.ts)
+- OpenRouter-ready prompt flow with deterministic fallback generation
 
-## 3. System Architecture
+## Architecture overview
 
 ```mermaid
 flowchart LR
-  T[Teacher UI Next.js] -->|POST /api/assignments| A[(Assignment API)]
-  T -->|POST /api/generation/start| G[(Generation API)]
-  G -->|enqueue| Q[BullMQ Queue]
+  UI[Next.js Teacher UI] -->|POST /api/assignments| ASG[Assignment API]
+  UI -->|POST /api/generation/start| GEN[Generation API]
+  GEN -->|enqueue| Q[BullMQ Queue]
   Q --> W[Worker]
-  W -->|LLM call via adapter| L[OpenRouter]
   W --> M[(MongoDB)]
   W --> R[(Redis)]
-  W -->|emit generation events| S[Socket.IO Server]
-  S -->|generation:queued/processing/completed/failed| T
-  T -->|GET status/result/detail| G
-  T -->|GET assignment list/detail| A
+  W -->|generation events| WS[Socket.IO]
+  WS --> UI
+  UI -->|GET /result /detail| GEN
 ```
 
-## 4. Generation Lifecycle
+## Feature coverage
 
-```mermaid
-sequenceDiagram
-  participant UI as Frontend
-  participant API as Express API
-  participant Q as BullMQ
-  participant W as Worker
-  participant DB as MongoDB
-  participant WS as Socket.IO
-  participant LLM as OpenRouter
+### Core features from assessment
 
-  UI->>API: POST /api/generation/start
-  API->>DB: save queued record
-  API->>Q: add job
-  API-->>UI: 202 jobId
-  API-->>WS: emit generation:queued
+1. Assignment creation frontend:
+- Done: due date, question rows, marks, additional instructions.
+- Done: optional file upload.
+- Done: validation for required and non-negative/non-zero values.
+- Done: state management via Zustand.
+- Done: WebSocket status management.
 
-  Q->>W: process job
-  W-->>WS: emit generation:processing
-  W->>LLM: structured prompt request
-  LLM-->>W: raw model output
-  W->>W: normalize and validate paper
-  W->>DB: save completed/failed result
-  W-->>WS: emit generation:completed or generation:failed
+2. AI question generation:
+- Done: request is converted into structured payload and prompt.
+- Done: output normalized into section/question/difficulty/marks model.
+- Done: raw LLM response is not rendered directly.
 
-  UI->>API: GET /api/generation/:jobId/result
-  API-->>UI: normalized generated paper
-```
+3. Backend system:
+- Done: Express + TypeScript.
+- Done: MongoDB for assignments and generation results.
+- Done: Redis + BullMQ queue + worker.
+- Done: WebSocket notifications for queued/processing/completed/failed.
 
-## 5. Repository Structure
+4. Output page:
+- Done: student info fields in paper model and paper sheet view.
+- Done: section title, instruction, question list.
+- Done: difficulty and marks per question.
+- Done: clean responsive rendering.
 
-- [backend](backend)
-- [backend/src/app.ts](backend/src/app.ts)
-- [backend/src/routes/assignment.route.ts](backend/src/routes/assignment.route.ts)
-- [backend/src/routes/generation.route.ts](backend/src/routes/generation.route.ts)
-- [backend/src/modules/assignments](backend/src/modules/assignments)
-- [backend/src/modules/generation](backend/src/modules/generation)
-- [backend/src/queue](backend/src/queue)
-- [backend/src/sockets/socket.server.ts](backend/src/sockets/socket.server.ts)
-- [veda-frontend](veda-frontend)
-- [veda-frontend/app/(dashboard)/assignments/page.tsx](veda-frontend/app/(dashboard)/assignments/page.tsx)
-- [veda-frontend/app/(dashboard)/assignments/new/page.tsx](veda-frontend/app/(dashboard)/assignments/new/page.tsx)
-- [veda-frontend/app/(dashboard)/assignments/[assignmentId]/page.tsx](veda-frontend/app/(dashboard)/assignments/%5BassignmentId%5D/page.tsx)
-- [veda-frontend/app/(dashboard)/ai-toolkit/page.tsx](veda-frontend/app/(dashboard)/ai-toolkit/page.tsx)
-- [veda-frontend/src/store](veda-frontend/src/store)
-- [veda-frontend/src/hooks/use-generation-status-socket.ts](veda-frontend/src/hooks/use-generation-status-socket.ts)
+### Bonus features
 
-## 6. API Specification
+- Regenerate paper: done.
+- Difficulty badges: done.
+- Download as PDF: partial.
+  - Currently supported:
+    - JSON download from assignment detail page.
+    - Print-friendly paper rendering that can be saved as PDF from browser print dialog.
+  - Not yet implemented: dedicated server/client PDF binary export endpoint.
 
-### Assignment APIs
+## Extra features added beyond brief
+
+- Home dashboard journey sections and improved visual shell.
+- Assignment page polish and responsive controls.
+- AI toolkit progress bar and regenerate-first flow.
+- Profile page complete redesign:
+  - Desktop and mobile-specific layouts.
+  - Persisted profile form (name, class, subject, school details).
+  - Email auto-bound to logged-in session.
+  - Hover interactions and visual polish for avatar/logo.
+  - Independent Home button behavior for desktop/mobile.
+- Desktop shell improvements:
+  - Navbar displays first name only from saved profile.
+  - School name box shown above Settings in desktop sidebar.
+
+## Key backend routes
+
+Assignments:
 - POST /api/assignments
-  - Creates or updates assignment metadata.
 - GET /api/assignments
-  - Returns assignment list for the authenticated user.
 - GET /api/assignments/:assignmentId
-  - Returns assignment detail + latest generation snapshot + latest generated paper.
+- PATCH /api/assignments/:assignmentId/rename
 - DELETE /api/assignments/:assignmentId
-  - Deletes assignment and related generation history.
 
-### Generation APIs
+Generation:
 - POST /api/generation/start
-  - Accepts multipart/form-data (optional file) and generation payload.
-  - Enqueues job and returns job id.
 - POST /api/generation/:jobId/regenerate
-  - Re-runs generation for a job context.
 - GET /api/generation/:jobId
-  - Returns job status/progress.
 - GET /api/generation/:jobId/result
-  - Returns normalized generated paper on completion.
 
-### Health APIs
+Health:
 - GET /api/health
 - GET /api/health/diagnostics
 
-## 7. WebSocket Contract
+## WebSocket contract
 
-Server events emitted to frontend:
+Events emitted:
 - generation:queued
 - generation:processing
 - generation:completed
 - generation:failed
 
-Client subscription actions:
-- generation:subscribe with assignmentId
-- generation:unsubscribe with assignmentId
+Client actions:
+- generation:subscribe { assignmentId }
+- generation:unsubscribe { assignmentId }
 
-Socket room pattern:
+Room convention:
 - assignment:{assignmentId}
 
-## 8. Data Contracts
+## Data and persistence notes
 
-### Assignment payload (frontend to backend)
-- assignmentId: string
-- title: string
-- dueDate: string
-- questionTypes: array of
-  - type
-  - numberOfQuestions
-  - marksPerQuestion
-  - totalMarks
-- totalQuestions: number
-- totalMarks: number
-- additionalInstructions: optional string
-- sourceFileAttached: boolean
+- Assignment and generation data persist in MongoDB.
+- Queue/job state and worker operations use Redis/BullMQ.
+- Profile values persist in frontend Zustand store (local persistence), including:
+  - userName
+  - className
+  - teacherSubject
+  - schoolName
+  - schoolLocation
+  - schoolIconUrl
 
-### Generated paper shape
-- assignmentId
-- schoolName
-- subject
-- className
-- timeAllowedMinutes
-- maxMarks
-- studentFields
-  - name
-  - rollNumber
-  - section
-- sections[]
-  - id
-  - title
-  - instruction
-  - questions[]
-    - id
-    - text
-    - marks
-    - difficulty (easy, medium, hard)
-- answerKey[] optional
+## File upload support
 
-## 9. Validation Rules
+Frontend validation in [veda-frontend/src/modules/assignments/schema.ts](veda-frontend/src/modules/assignments/schema.ts):
+- PDF and TXT supported.
+- Max file size 10MB.
 
-Frontend form validation:
-- Due date required.
-- At least one question type row.
-- numberOfQuestions >= 1.
-- marksPerQuestion >= 1.
-- Optional file must be PDF.
-- File size max 10 MB.
-- additionalInstructions max length constraints via schema.
+Backend extraction in [backend/src/modules/generation/file-extractor.ts](backend/src/modules/generation/file-extractor.ts):
+- PDF text extraction.
+- TXT plain text extraction.
 
-Backend validation:
-- Assignment create payload validated with Zod.
-- Generation payload normalization and guard rails before persistence.
-- Unknown/invalid structures rejected with consistent API error envelopes.
+## Environment variables
 
-## 10. Authentication
-
-- Frontend uses Clerk for user session.
-- Backend validates auth and resolves user identity per request.
-- Data access is user-scoped for assignments and generation records.
-
-## 11. Environment Variables
-
-### Backend env
-Defined in [backend/src/config/env.ts](backend/src/config/env.ts):
-- PORT default 4000
-- CORS_ORIGIN default http://localhost:3000
+Backend ([backend/src/config/env.ts](backend/src/config/env.ts)):
+- PORT
+- CORS_ORIGIN
 - MONGO_URI
 - REDIS_URL
 - CLERK_SECRET_KEY
 - OPENROUTER_API_KEY
-- OPENROUTER_MODEL default openai/gpt-4o-mini
+- OPENROUTER_MODEL
 
-### Frontend env
-Defined in [veda-frontend/src/lib/env.ts](veda-frontend/src/lib/env.ts):
-- NEXT_PUBLIC_API_URL default http://localhost:4000/api
-- NEXT_PUBLIC_SOCKET_URL default http://localhost:4000
+Frontend ([veda-frontend/src/lib/env.ts](veda-frontend/src/lib/env.ts)):
+- NEXT_PUBLIC_API_URL
+- NEXT_PUBLIC_SOCKET_URL
 
-## 12. Local Setup
+## Local development
 
-### Prerequisites
+Prerequisites:
 - Node.js 18+
 - MongoDB
 - Redis
-- Clerk project and keys
-- OpenRouter API key
+- Clerk keys
+- OpenRouter key (if using provider mode)
 
-### Install
-From project root:
+Install:
 
 ```bash
 cd backend && npm install
 cd ../veda-frontend && npm install
 ```
 
-### Run backend
+Run backend:
 
 ```bash
 cd backend
 npm run dev
 ```
 
-Expected service:
-- API at http://localhost:4000/api
-
-### Run frontend
+Run frontend:
 
 ```bash
 cd veda-frontend
 npm run dev
 ```
 
-Expected service:
-- App at http://localhost:3000
+Quality checks:
 
-If startup fails because ports are already in use, free ports 3000 and 4000 before restarting.
+```bash
+cd veda-frontend && npm run lint
+cd ../backend && npm run build
+```
 
-## 13. User Workflow
+## Deployment notes
 
-1. Open assignments dashboard.
-2. Create new assignment.
-3. Save draft and trigger generation.
-4. UI subscribes to generation room via WebSocket.
-5. Watch queued to processing to completed status updates.
-6. Open detail/output page to view generated paper.
-7. Download generated paper JSON or regenerate.
-8. Delete assignment when needed.
+- Deploy backend and frontend separately with consistent env values.
+- Set CORS origin(s) for frontend host(s).
+- Ensure Redis and Mongo are reachable from backend runtime.
+- Validate Clerk and OpenRouter secrets in production.
 
-## 14. Current Status and Next Improvements
+## Assessment checklist summary
 
-### Stable
-- Assignment create/list/detail/delete flow wired end to end.
-- Queue-driven generation and real-time status updates.
-- Persisted output retrieval from backend.
-
-### Suggested improvements
-- Implement true PDF export for generated paper.
-- Add server-side pagination for assignment lists.
-- Add optimistic retry UI for transient generation failures.
-- Add integration tests for queue-worker and API contracts.
-
-## 15. Assessment Mapping Checklist
-
-- Assignment creation form with validation: Done
-- Zustand state management: Done
-- WebSocket management: Done
-- Structured prompt to AI and parsed output: Done
-- Avoid direct raw LLM rendering: Done
-- MongoDB persistence: Done
-- Redis + BullMQ async processing: Done
-- Realtime updates via sockets: Done
-- Output page with student info and sections: Done
-- Clean and responsive UI: Done
-- Bonus regenerate: Done
-- Bonus difficulty badges: Done
-- Bonus PDF download: Partial (JSON export implemented)
+- Assignment form and validation: complete
+- Zustand + WebSocket management: complete
+- Structured AI generation flow: complete
+- Node/Express + Mongo + Redis + BullMQ + Socket updates: complete
+- Output rendering with sections/difficulty/marks: complete
+- Bonus regenerate: complete
+- Bonus difficulty badges: complete
+- Bonus PDF export endpoint: partial (print-to-PDF and JSON download available)

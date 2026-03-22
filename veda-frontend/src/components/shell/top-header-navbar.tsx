@@ -24,6 +24,8 @@ export function TopHeaderNavbar({
 	const [menuOpen, setMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement | null>(null);
 
+	const displayName = userName.trim().split(/\s+/)[0] || "John";
+
 	const initials = userName
 		.split(" ")
 		.map((part) => part[0])
@@ -93,7 +95,7 @@ export function TopHeaderNavbar({
 						<span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-800">
 							{initials}
 						</span>
-						<span className="text-sm font-semibold text-slate-800">{userName}</span>
+						<span className="text-sm font-semibold text-slate-800">{displayName}</span>
 						<ChevronDown className="h-4 w-4 text-slate-500" />
 					</button>
 				</div>
