@@ -271,7 +271,7 @@ export default function AIToolkitPage() {
 
 	const regenerateFromBackend = async () => {
 		if (!regenerateSourceJobId) {
-			setStartError("Generate once before regenerating.");
+			await startGenerationFromBackend();
 			return;
 		}
 
@@ -318,6 +318,12 @@ export default function AIToolkitPage() {
 	};
 
 	const currentStatus = socketJob?.status ?? activeJob?.status ?? generationSubmitDraft?.clientStatus;
+	const rawProgress = socketJob?.progress ?? activeJob?.progress ?? 0;
+	const progressPercent = currentStatus === "completed"
+		? 100
+		: currentStatus === "failed"
+			? 0
+			: Math.max(0, Math.min(100, rawProgress));
 	const showPaperSkeleton =
 		isStarting ||
 		isRegenerating ||
@@ -335,20 +341,11 @@ export default function AIToolkitPage() {
 						<div className="flex items-center gap-2">
 							<button
 								type="button"
-								onClick={startGenerationFromBackend}
-								disabled={!draftRequest || isStarting || isRegenerating}
-								className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								{isStarting ? "Starting..." : "Start"}
-							</button>
-
-							<button
-								type="button"
 								onClick={regenerateFromBackend}
-								disabled={!regenerateSourceJobId || isRegenerating || isStarting}
-								className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+								disabled={!draftRequest || isRegenerating || isStarting}
+								className="rounded-full bg-[#181818] px-3 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
 							>
-								{isRegenerating ? "Regenerating..." : "Regenerate"}
+								{isRegenerating || isStarting ? "Regenerating..." : "Regenerate"}
 							</button>
 						</div>
 					</div>
@@ -361,7 +358,15 @@ export default function AIToolkitPage() {
 					</div>
 
 					{startError ? <p className="mt-2 text-xs text-rose-600">{startError}</p> : null}
-					{resultInfo ? <p className="mt-1 text-xs text-slate-600">{resultInfo}</p> : null}
+
+					<div className="mt-3 border-t border-slate-200 pt-2">
+						<div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+							<div
+								className={`h-1.5 rounded-full transition-all duration-500 ${currentStatus === "failed" ? "bg-rose-500" : "bg-[#181818]"}`}
+								style={{ width: `${progressPercent}%` }}
+							/>
+						</div>
+					</div>
 				</section>
 			) : null}
 
@@ -374,7 +379,12 @@ export default function AIToolkitPage() {
 			{showPaperSkeleton ? (
 				<GenerationPaperSkeleton />
 			) : activePaper && activeJob ? (
-				<AIToolkitLiveView job={socketJob ?? activeJob} socketConnected={socketConnected} paper={activePaper} />
+				<AIToolkitLiveView
+					job={socketJob ?? activeJob}
+					socketConnected={socketConnected}
+					paper={activePaper}
+					userName={profile?.userName}
+				/>
 			) : (
 				<section className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
 					No generated paper yet. Start generation and wait for completion.

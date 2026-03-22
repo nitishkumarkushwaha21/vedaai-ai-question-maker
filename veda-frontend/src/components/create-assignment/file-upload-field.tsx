@@ -14,7 +14,7 @@ export function FileUploadField({ control }: FileUploadFieldProps) {
       name="file"
       control={control}
       render={({ field, fieldState }) => (
-        <div className="rounded-[14px] border border-dashed border-[#d8dbe1] bg-white px-4 py-5 text-center">
+        <div className="upload-dashed-8 rounded-[14px] bg-white px-4 py-5 text-center">
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[#666a72]">
             <UploadCloud className="h-4.5 w-4.5" />
           </span>

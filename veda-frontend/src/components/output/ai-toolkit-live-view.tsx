@@ -9,9 +9,10 @@ type AIToolkitLiveViewProps = {
 	job: GenerationJob;
 	socketConnected: boolean;
 	paper: QuestionPaper;
+	userName?: string;
 };
 
-export function AIToolkitLiveView({ job, socketConnected, paper }: AIToolkitLiveViewProps) {
+export function AIToolkitLiveView({ job, socketConnected, paper, userName = "John Doe" }: AIToolkitLiveViewProps) {
 	const handleDownloadPdf = () => {
 		window.print();
 	};
@@ -19,7 +20,7 @@ export function AIToolkitLiveView({ job, socketConnected, paper }: AIToolkitLive
 	return (
 		<section className="print-area space-y-4 pb-20 md:pb-4">
 			<OutputHeader
-				title="Certainly, Lakshya! Here are customized Question Paper for your CBSE Grade 8 Science classes on the NCERT chapters:"
+				title={`Certainly, ${userName}! Here are customized Question Paper for your CBSE Grade 8 Science classes on the NCERT chapters:`}
 				subtitle={socketConnected ? `Live output synced with backend generation status. Current status: ${job.status}.` : "Live updates disconnected. Showing latest available paper."}
 				onDownload={handleDownloadPdf}
 			/>

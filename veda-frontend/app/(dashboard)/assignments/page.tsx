@@ -82,6 +82,7 @@ export default function AssignmentsPage() {
     () => items.filter((item) => item.title.toLowerCase().includes(search.toLowerCase().trim())),
     [items, search],
   );
+  const hasAssignments = filteredItems.length > 0;
 
   const handleDeleteAssignment = async (assignmentId: string) => {
     setError(null);
@@ -119,7 +120,7 @@ export default function AssignmentsPage() {
       {loading ? <p className="text-sm text-slate-500">Loading assignments...</p> : null}
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       {!loading && !error ? (
-        filteredItems.length > 0 ? (
+        hasAssignments ? (
           <AssignmentsGrid
             items={filteredItems}
             onDeleteAssignment={handleDeleteAssignment}
@@ -136,9 +137,13 @@ export default function AssignmentsPage() {
           <div className="pointer-events-auto absolute left-1/2 top-[10px] z-20 -translate-x-1/2">
             <Link
               href={ROUTES.CREATE_ASSIGNMENT}
-              className="inline-flex h-[46px] w-[208px] items-center justify-center gap-1 rounded-full border-[1.5px] border-[#2f2f2f] bg-[#181818] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_24px_rgba(2,8,23,0.35)]"
+              className={`inline-flex h-[46px] items-center justify-center gap-1 rounded-full border-[1.5px] px-6 py-3 text-sm font-medium shadow-[0_10px_24px_rgba(2,8,23,0.35)] ${
+                hasAssignments
+                  ? "w-[208px] border-[#2f2f2f] bg-[#181818] text-white"
+                  : "w-[277px] border-[#2f2f2f] bg-[#181818] text-white"
+              }`}
             >
-              + Create Assignment
+              {hasAssignments ? "+ Create Assignment" : "+ create your first assignment"}
             </Link>
           </div>
         </div>

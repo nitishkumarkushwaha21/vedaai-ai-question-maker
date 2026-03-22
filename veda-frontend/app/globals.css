@@ -25,6 +25,109 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.upload-dashed-8 {
+  --dash-color: #cbd1d9;
+  --dash-size: 8px;
+  --dash-gap: 8px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--dash-color) 0 var(--dash-size),
+      transparent var(--dash-size) calc(var(--dash-size) + var(--dash-gap))
+    ) top left / calc(100% - 2px) 2px no-repeat,
+    repeating-linear-gradient(
+      to bottom,
+      var(--dash-color) 0 var(--dash-size),
+      transparent var(--dash-size) calc(var(--dash-size) + var(--dash-gap))
+    ) top right / 2px calc(100% - 2px) no-repeat,
+    repeating-linear-gradient(
+      to right,
+      var(--dash-color) 0 var(--dash-size),
+      transparent var(--dash-size) calc(var(--dash-size) + var(--dash-gap))
+    ) bottom left / calc(100% - 2px) 2px no-repeat,
+    repeating-linear-gradient(
+      to bottom,
+      var(--dash-color) 0 var(--dash-size),
+      transparent var(--dash-size) calc(var(--dash-size) + var(--dash-gap))
+    ) top left / 2px calc(100% - 2px) no-repeat,
+    #ffffff;
+}
+
+.journey-image-shell {
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 28px 52px rgba(15, 23, 42, 0.2), 0 8px 24px rgba(15, 23, 42, 0.1);
+}
+
+.journey-image-frame {
+  position: relative;
+  aspect-ratio: 16 / 8.6;
+  background: #ffffff;
+}
+
+.journey-image-pulse {
+  display: block;
+  animation: journeyPulse 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.journey-image-crop {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* Focus on white center panel and trim gray outer frame from source image. */
+  clip-path: inset(12% 5.5% 11% 5.5% round 28px);
+}
+
+.journey-image-fade {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.journey-image-fade.is-loaded {
+  opacity: 1;
+}
+
+.journey-image-skeleton {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: linear-gradient(90deg, #e7eaef 20%, #f4f6f9 45%, #e7eaef 70%);
+  background-size: 200% 100%;
+  animation: journeySkeletonShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes journeySkeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes journeyPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.012);
+    opacity: 0.94;
+    filter: brightness(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,

@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ArrowRight, CalendarPlus2, CirclePlus, Mic } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus2, Mic, Plus } from "lucide-react";
 import {
   createAssignmentSchema,
   type CreateAssignmentFormValues,
@@ -207,7 +207,7 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
 
   return (
     <form onSubmit={onSaveAndContinue} className="space-y-6">
-      <div className="mx-auto w-full max-w-[810px] space-y-6 rounded-[32px] bg-[#f5f5f7] p-4 md:w-[810px] md:p-8">
+      <div className="mx-auto w-full max-w-[810px] space-y-6 rounded-[32px] bg-[#FFFFFF80] p-4 md:w-[810px] md:bg-[#FFFFFF80] md:p-8">
         <div>
           <h2 className="text-[22px] font-semibold text-[#202227]">Assignment Details</h2>
           <p className="text-[11px] text-[#9ea2aa]">Basic information about your assignment</p>
@@ -220,7 +220,19 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
 
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-[#2f3238]">Due Date</label>
-          <div className="relative">
+          <div
+            className="relative cursor-pointer"
+            onClick={openDueDatePicker}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openDueDatePicker();
+              }
+            }}
+            aria-label="Open due date picker"
+          >
             <input
               type="date"
               className="h-9 w-full rounded-[10px] border border-[#e2e4e8] bg-white px-3 pr-9 text-[11px] text-[#2a2d33] [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-0"
@@ -233,24 +245,24 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
                 dueDateInputRef.current = node;
               }}
             />
-            <button
-              type="button"
-              onClick={openDueDatePicker}
-              aria-label="Open due date picker"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#8f949d] hover:bg-slate-100"
+            <span
+              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#8f949d]"
+              aria-hidden="true"
             >
               <CalendarPlus2 className="h-3.5 w-3.5" />
-            </button>
+            </span>
           </div>
           {errors.dueDate ? <p className="text-[10px] text-rose-600">{errors.dueDate.message}</p> : null}
         </div>
 
         <div className="space-y-2">
-          <div className="grid grid-cols-[minmax(0,1fr)_118px_86px] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_132px_92px]">
+          <div className="hidden grid-cols-[minmax(0,1fr)_118px_86px] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_132px_92px] md:grid">
             <label className="text-[11px] font-semibold text-[#2f3238]">Question Type</label>
             <p className="pb-1 text-center text-[10px] font-medium text-[#8e939c]">No of Questions</p>
             <p className="pb-1 text-center text-[10px] font-medium text-[#8e939c]">Marks</p>
           </div>
+
+          <label className="text-[11px] font-semibold text-[#2f3238] md:hidden">Question Type</label>
 
           <div className="space-y-2">
             {fields.map((field, index) => (
@@ -318,9 +330,11 @@ export function CreateAssignmentForm({ onProgressChange }: CreateAssignmentFormP
                 marksPerQuestion: 1,
               })
             }
-            className="inline-flex items-center gap-2 rounded-full px-0 py-1 text-[11px] font-medium text-[#2f3238]"
+            className="inline-flex items-center gap-3 rounded-full px-0 py-1 text-[12px] font-semibold text-[#1f2329]"
           >
-            <CirclePlus className="h-4 w-4 text-[#262a30]" />
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#181818] text-white md:h-8 md:w-8">
+              <Plus className="h-6 w-6 md:h-5 md:w-5" strokeWidth={2.6} />
+            </span>
             Add Question Type
           </button>
         </div>

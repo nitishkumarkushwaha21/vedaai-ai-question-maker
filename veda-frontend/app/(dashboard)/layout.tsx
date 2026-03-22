@@ -18,7 +18,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const userName = useAuthStore((state) => state.profile.userName);
 
   const headerTitle =
-    pathname === "/assignments/new"
+    pathname === "/home"
+      ? "Home"
+      : pathname === "/assignments/new"
       ? "Create Assignment"
       : pathname === "/ai-toolkit"
         ? "AI Teacher's Toolkit"
@@ -27,13 +29,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           : "Assignment";
 
   return (
-    <div className="min-h-screen bg-[#e8eaee] text-[#222]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,_#EEEEEE_0%,_#DADADA_100%)] text-[#222]">
       <div className="flex w-full flex-col gap-3 p-3 md:flex-row md:p-3">
         <aside className="hidden md:block md:h-[756px] md:w-[304px] md:shrink-0">
           <DesktopSidebarNav />
         </aside>
 
-        <main className="min-w-0 flex-1 rounded-2xl border border-[#d7dbe2] bg-[#eef1f5] p-3 md:p-5">
+        <main className="min-w-0 flex-1 rounded-2xl border border-[#d7dbe2] bg-[linear-gradient(180deg,_#EEEEEE_0%,_#DADADA_100%)] p-3 md:p-5">
           <div className="mx-auto w-full max-w-[1100px]">
             <TopHeaderNavbar title={headerTitle} userName={userName} />
             {children}

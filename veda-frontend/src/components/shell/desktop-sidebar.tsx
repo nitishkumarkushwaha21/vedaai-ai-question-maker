@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { BookOpen, FolderOpen, Home, Plus, Settings, Sparkles, Users } from "lucide-react";
 import { useAuthStore } from "@/auth/auth.store";
@@ -18,7 +21,12 @@ const ICONS = {
 
 export function DesktopSidebarNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut: clerkSignOut } = useClerk();
   const profile = useAuthStore((state) => state.profile);
+  const localSignOut = useAuthStore((state) => state.signOut);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const userName = profile.userName || "John Doe";
   const initials = userName
     .split(" ")
@@ -26,6 +34,37 @@ export function DesktopSidebarNav() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (!menuRef.current) {
+        return;
+      }
+
+      if (!menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", onClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+    };
+  }, [menuOpen]);
+
+  const handleSwitchAccount = async () => {
+    setMenuOpen(false);
+    try {
+      await clerkSignOut();
+    } catch {
+      // Continue with local sign out even if remote sign out fails.
+    }
+    localSignOut();
+    router.push(ROUTES.SIGNUP);
+  };
 
   return (
     <div className="flex h-auto w-full flex-col rounded-[16px] bg-white p-6 shadow-[0_32px_48px_rgba(0,0,0,0.2),0_16px_48px_rgba(0,0,0,0.12)] md:h-[756px] md:w-[304px]">
@@ -81,10 +120,35 @@ export function DesktopSidebarNav() {
       </nav>
 
       <div className="mt-auto">
-        <Link href={ROUTES.AUTH_PROFILE} className="mb-4 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-50">
-          <Settings className="h-4 w-4" />
-          Settings
-        </Link>
+        <div ref={menuRef} className="relative mb-4">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-50"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </button>
+
+          {menuOpen ? (
+            <div className="absolute bottom-10 left-0 z-50 min-w-[170px] rounded-xl bg-[#181818] p-2 shadow-[0_12px_28px_rgba(15,23,42,0.35)]">
+              <Link
+                href={ROUTES.AUTH_PROFILE}
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm font-medium text-white hover:bg-white/10"
+              >
+                Profile
+              </Link>
+              <button
+                type="button"
+                onClick={() => void handleSwitchAccount()}
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-white hover:bg-white/10"
+              >
+                Switch Account
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         <div className="flex items-center gap-3 rounded-2xl bg-slate-100 p-3">
           {profile.schoolIconUrl ? (

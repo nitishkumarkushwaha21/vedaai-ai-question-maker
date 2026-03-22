@@ -3,7 +3,7 @@
 import type { UseFormRegister } from "react-hook-form";
 import type { CreateAssignmentFormValues } from "@/modules/assignments/schema";
 import { QUESTION_TYPE_OPTIONS } from "@/modules/assignments/schema";
-import { Minus, Plus, X } from "lucide-react";
+import { ChevronDown, Minus, Plus, X } from "lucide-react";
 
 type QuestionTypeRowProps = {
   index: number;
@@ -35,8 +35,84 @@ export function QuestionTypeRow({
   onRemove,
 }: QuestionTypeRowProps) {
   return (
-    <div className="space-y-1.5">
-      <div className="grid grid-cols-[minmax(0,1fr)_24px_118px_86px] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_24px_132px_92px]">
+    <div className="mx-auto w-full max-w-[317px] space-y-1.5 rounded-[24px] bg-white p-3 md:mx-0 md:max-w-none md:rounded-none md:bg-transparent md:p-0">
+      <div className="space-y-3 md:hidden">
+        <div className="mx-auto flex h-5 w-[293px] max-w-full items-center justify-between rounded-[10px] bg-white">
+          <div className="flex min-w-0 items-center gap-2">
+            <select
+              className="h-5 max-w-[190px] appearance-none bg-transparent px-0 text-[12px] font-medium text-[#2a2a2f]"
+              {...register(`questionRows.${index}.type`)}
+            >
+              {QUESTION_TYPE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="h-4 w-4 text-[#555a63]" />
+          </div>
+
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Remove question row ${index + 1}`}
+            className="inline-flex h-5 w-5 items-center justify-center text-[#353943]"
+          >
+            <X className="h-4 w-4" strokeWidth={2.8} />
+          </button>
+        </div>
+
+        <div className="mx-auto h-[82px] w-[293px] max-w-full rounded-[24px] bg-[#F0F0F0] p-2">
+          <div className="mb-2 grid grid-cols-2 gap-3 text-center text-[10px] font-medium text-[#6f737b]">
+            <p>No. of Ques</p>
+            <p>Marks</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex h-[38px] w-[132.5px] max-w-full items-center justify-between rounded-[100px] bg-white px-2">
+              <button
+                type="button"
+                onClick={onDecrementQuestions}
+                aria-label={`Decrease number of questions for row ${index + 1}`}
+                className="inline-flex h-5 w-5 items-center justify-center text-[#6f737b]"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-[12px] font-semibold text-[#3d4148]">{numberOfQuestions}</span>
+              <button
+                type="button"
+                onClick={onIncrementQuestions}
+                aria-label={`Increase number of questions for row ${index + 1}`}
+                className="inline-flex h-5 w-5 items-center justify-center text-[#6f737b]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="flex h-[38px] w-[132.5px] max-w-full items-center justify-between rounded-[100px] bg-white px-2">
+              <button
+                type="button"
+                onClick={onDecrementMarks}
+                aria-label={`Decrease marks for row ${index + 1}`}
+                className="inline-flex h-5 w-5 items-center justify-center text-[#6f737b]"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-[12px] font-semibold text-[#3d4148]">{marksPerQuestion}</span>
+              <button
+                type="button"
+                onClick={onIncrementMarks}
+                aria-label={`Increase marks for row ${index + 1}`}
+                className="inline-flex h-5 w-5 items-center justify-center text-[#6f737b]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="hidden grid-cols-[minmax(0,1fr)_24px_132px_92px] items-center gap-2 md:grid">
         <select
           className="h-9 w-full rounded-[10px] border border-[#e3e3e6] bg-white px-3 text-[11px] text-[#2a2a2f]"
           {...register(`questionRows.${index}.type`)}

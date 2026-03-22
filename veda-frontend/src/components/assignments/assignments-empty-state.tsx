@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { CircleX, Search } from "lucide-react";
-import { ROUTES } from "@/lib/routes";
 
 export function AssignmentsEmptyState() {
   return (
-    <div className="rounded-3xl bg-white p-8 text-center shadow-sm md:p-12">
+    <div className="rounded-3xl bg-transparent p-8 text-center md:p-12">
       <div className="relative mx-auto mb-7 flex h-52 w-52 items-center justify-center rounded-full bg-slate-100">
         <div className="absolute -right-2 top-4 h-8 w-16 rounded-lg bg-white shadow-sm" />
         <div className="absolute -left-4 top-6 h-7 w-7 rounded-full border-2 border-slate-400" />
@@ -27,12 +25,6 @@ export function AssignmentsEmptyState() {
         Create your first assignment to start collecting and grading student submissions. You can set up rubrics,
         define marking criteria, and let AI assist with grading.
       </p>
-      <Link
-        href={ROUTES.CREATE_ASSIGNMENT}
-        className="inline-flex rounded-full bg-[#181818] px-6 py-3 text-sm font-medium text-white"
-      >
-        + Create Your First Assignment
-      </Link>
     </div>
   );
 }
